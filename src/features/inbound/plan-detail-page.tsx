@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react'
 import { useNavigate, useParams } from 'react-router'
-import { ArrowLeft, CheckCircle2, Pencil, XCircle } from 'lucide-react'
+import { ArrowLeft, CheckCircle2, Copy, Pencil, XCircle } from 'lucide-react'
 
 import { canApprove, useAuth } from '@/lib/auth-context'
 import { formatDateTime, formatQty } from '@/lib/date'
@@ -126,6 +126,11 @@ export function PlanDetailPage() {
             <Button variant="ghost" onClick={() => navigate('/inbound/plans')}>
               <ArrowLeft /> 목록
             </Button>
+            {(plan.status === 'REJECTED' || plan.status === 'CANCELLED') && (
+              <Button onClick={() => navigate(`/inbound/plans/new?copy=${plan.id}`)}>
+                <Copy /> 복사해서 다시 등록
+              </Button>
+            )}
             {pending && (
               <>
                 <Button variant="outline" onClick={() => setCancelOpen(true)}>

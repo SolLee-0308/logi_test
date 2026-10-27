@@ -1,52 +1,23 @@
-import { Link, useNavigate } from 'react-router'
-import {
-  CalendarClock,
-  CheckCircle2,
-  ClipboardList,
-  PackageCheck,
-  type LucideIcon,
-} from 'lucide-react'
+import { useNavigate } from 'react-router'
+import { CalendarClock, CheckCircle2, ClipboardList, PackageCheck } from 'lucide-react'
 
+import { isShipperUser, useAuth } from '@/lib/auth-context'
 import { todayKst, formatQty } from '@/lib/date'
 import { usePendingCounts, usePlans } from '@/features/inbound/api'
+import { KpiCard } from '@/features/dashboard/kpi-card'
+import { ShipperDashboard } from '@/features/dashboard/shipper-dashboard'
 import { SupabaseStatusCard } from '@/features/dashboard/supabase-status-card'
 import { StatusBadge } from '@/components/common/status-badge'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 
-function Kpi({
-  title,
-  value,
-  icon: Icon,
-  to,
-  tone,
-}: {
-  title: string
-  value: number | undefined
-  icon: LucideIcon
-  to: string
-  tone?: string
-}) {
-  return (
-    <Link to={to}>
-      <Card className="hover:bg-muted/40 transition-colors">
-        <CardHeader className="flex flex-row items-center justify-between">
-          <CardDescription>{title}</CardDescription>
-          <Icon className="text-muted-foreground size-4" />
-        </CardHeader>
-        <CardContent>
-          {value === undefined ? (
-            <Skeleton className="h-9 w-16" />
-          ) : (
-            <p className={`text-3xl font-semibold tabular-nums ${tone ?? ''}`}>{value}</p>
-          )}
-        </CardContent>
-      </Card>
-    </Link>
-  )
+// 로그인 사용자 구분에 따라 화주사용 / 3PL용 대시보드를 보여 준다
+export function DashboardPage() {
+  const { profile } = useAuth()
+  return isShipperUser(profile) ? <ShipperDashboard /> : <InternalDashboard />
 }
 
-export function DashboardPage() {
+function InternalDashboard() {
   const navigate = useNavigate()
   const today = todayKst()
   const { data: todayPlans, isLoading } = usePlans(today, today)
@@ -61,26 +32,26 @@ export function DashboardPage() {
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
-        <Kpi
+        <KpiCard
           title="오늘 입고예정"
           value={active?.length}
           icon={CalendarClock}
           to="/inbound/plans"
         />
-        <Kpi
+        <KpiCard
           title="오늘 승인 완료"
           value={todayPlans?.filter((p) => p.status === 'APPROVED').length}
           icon={CheckCircle2}
           to="/inbound/plans"
         />
-        <Kpi
+        <KpiCard
           title="승인대기 입고예정"
           value={pending?.plans}
           icon={ClipboardList}
           to="/inbound/plans"
           tone={pending?.plans ? 'text-amber-600' : ''}
         />
-        <Kpi
+        <KpiCard
           title="승인대기 품목"
           value={pending?.items}
           icon={PackageCheck}

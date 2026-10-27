@@ -1,5 +1,5 @@
 import { useMemo, useRef, useState } from 'react'
-import { useNavigate, useParams } from 'react-router'
+import { useNavigate, useParams, useSearchParams } from 'react-router'
 import { FileSpreadsheet, Trash2, Upload, XCircle } from 'lucide-react'
 
 import { isShipperUser, useAuth } from '@/lib/auth-context'
@@ -34,12 +34,15 @@ import {
 
 type Line = { item: Item; plan_qty: number | ''; remark: string }
 
-// 수정 시 기존 전표와 품목을 모두 불러온 뒤 폼을 그린다
+// 수정 시 기존 전표와 품목을 모두 불러온 뒤 폼을 그린다.
+// ?copy=<전표 id> 로 들어오면 반려·취소된 전표 내용을 복사해 새로 등록한다.
 export function PlanFormPage() {
   const { id } = useParams()
-  const { data: existing, isLoading } = usePlan(id)
+  const [params] = useSearchParams()
+  const copyId = id ? undefined : (params.get('copy') ?? undefined)
+  const { data: existing, isLoading } = usePlan(id ?? copyId)
   const { data: allItems } = useItems()
-  if (!allItems || (id && isLoading)) {
+  if (!allItems || ((id || copyId) && isLoading)) {
     return (
       <div className="space-y-4">
         <Skeleton className="h-10 w-72" />
@@ -48,16 +51,26 @@ export function PlanFormPage() {
       </div>
     )
   }
-  return <PlanForm key={id ?? 'new'} id={id} existing={existing} allItems={allItems} />
+  return (
+    <PlanForm
+      key={id ?? copyId ?? 'new'}
+      id={id}
+      existing={existing}
+      copied={Boolean(copyId)}
+      allItems={allItems}
+    />
+  )
 }
 
 function PlanForm({
   id,
   existing,
+  copied,
   allItems,
 }: {
   id: string | undefined
   existing: ReturnType<typeof usePlan>['data']
+  copied: boolean
   allItems: Item[]
 }) {
   const isEdit = Boolean(id)
@@ -72,11 +85,20 @@ function PlanForm({
   const [shipperId, setShipperId] = useState<string>(
     plan?.shipper_id ?? (shipperUser ? (profile?.shipper_id ?? '') : ''),
   )
-  const [planDate, setPlanDate] = useState(plan?.plan_date ?? todayKst())
+  // 복사 등록: 지난 일자는 오늘로
+  const [planDate, setPlanDate] = useState(
+    plan && !(copied && plan.plan_date < todayKst()) ? plan.plan_date : todayKst(),
+  )
   const [remark, setRemark] = useState(plan?.remark ?? '')
-  const [sourceType, setSourceType] = useState<SourceType>(plan?.source_type ?? 'MANUAL')
+  const [sourceType, setSourceType] = useState<SourceType>(
+    copied ? 'MANUAL' : (plan?.source_type ?? 'MANUAL'),
+  )
   const [lines, setLines] = useState<Line[]>(() => {
-    const itemMap = new Map(allItems.map((i) => [i.id, i]))
+    // 복사 등록은 지금 사용할 수 있는(승인·사용 중) 품목만 가져온다
+    const usable = copied
+      ? allItems.filter((i) => i.is_active && i.approval_status === 'APPROVED')
+      : allItems
+    const itemMap = new Map(usable.map((i) => [i.id, i]))
     return (existing?.lines ?? [])
       .filter((l) => itemMap.has(l.item_id))
       .map((l) => ({
@@ -85,7 +107,12 @@ function PlanForm({
         remark: l.remark ?? '',
       }))
   })
-  const [excelErrors, setExcelErrors] = useState<string[]>([])
+  const skippedCount = copied ? (existing?.lines.length ?? 0) - lines.length : 0
+  const [excelErrors, setExcelErrors] = useState<string[]>(
+    skippedCount > 0
+      ? [`원본 전표의 품목 중 ${skippedCount}건은 미승인·미사용 품목이라 제외했습니다.`]
+      : [],
+  )
   const [formError, setFormError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
@@ -162,7 +189,13 @@ function PlanForm({
   return (
     <div className="space-y-6">
       <PageHeader
-        title={isEdit ? `입고예정 수정 ${plan?.plan_no ?? ''}` : '입고예정 등록'}
+        title={
+          isEdit
+            ? `입고예정 수정 ${plan?.plan_no ?? ''}`
+            : copied
+              ? `입고예정 등록 (${plan?.plan_no ?? ''} 복사)`
+              : '입고예정 등록'
+        }
         description="입고할 품목과 수량을 입력하고 저장하면 '승인대기' 상태가 됩니다. 승인 전까지 수정·취소할 수 있습니다."
       />
 

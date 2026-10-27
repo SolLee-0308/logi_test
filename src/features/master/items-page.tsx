@@ -1,6 +1,7 @@
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
+import { useSearchParams } from 'react-router'
 import { CheckCircle2, Download, Plus, Upload, XCircle } from 'lucide-react'
 import { z } from 'zod'
 
@@ -73,7 +74,11 @@ export function ItemsPage() {
   const { data: items, isLoading } = useItems()
   const approveItems = useApproveItems()
   const rejectItem = useRejectItem()
-  const [approvalTab, setApprovalTab] = useState<'ALL' | ApprovalStatus>('ALL')
+  // ?tab=PENDING|REJECTED 로 특정 승인 상태 탭을 바로 연다 (대시보드 링크)
+  const [params] = useSearchParams()
+  const [approvalTab, setApprovalTab] = useState<'ALL' | ApprovalStatus>(
+    (['PENDING', 'APPROVED', 'REJECTED'] as const).find((s) => s === params.get('tab')) ?? 'ALL',
+  )
   const [rejectReason, setRejectReason] = useState('')
   const { data: shippers } = useShippers()
   const uomMap = useCodeMap('UOM')
