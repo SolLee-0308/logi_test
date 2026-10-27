@@ -180,10 +180,12 @@ erDiagram
 | 컬럼 | 타입 | 제약 | 설명 |
 |---|---|---|---|
 | id | uuid | PK | |
-| shipper_code | varchar(20) | UK, NOT NULL | 화주코드 |
+| shipper_code | varchar(20) | UK, NOT NULL, CHECK `^S\d{5}$` | 화주코드. 트리거 `fn_shipper_code`가 등록 시 `shipper_code_seq`로 자동채번, 변경 불가 |
 | shipper_name | varchar(100) | NOT NULL | 화주명 |
 | biz_no | varchar(12) | | 사업자번호 |
-| address | text | | |
+| zip_code | varchar(5) | CHECK 숫자 5자리 | 우편번호 |
+| address | text | | 기본주소 (주소 검색 결과) |
+| address_detail | varchar(200) | | 상세주소 |
 | manager_name / manager_tel / manager_email | varchar | | 업무 담당자(선택) |
 | remark | text | | |
 | is_active | boolean | default true | |
