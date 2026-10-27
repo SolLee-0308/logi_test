@@ -1,6 +1,8 @@
 // Supabase/Postgres 오류를 사용자에게 보여줄 한국어 메시지로 변환한다.
 
 const CONSTRAINT_MESSAGES: Record<string, string> = {
+  company_corp_no_check: '법인등록번호는 000000-0000000 형식으로 입력하세요.',
+  company_zip_code_check: '우편번호는 숫자 5자리입니다.',
   shippers_shipper_code_key: '이미 사용 중인 화주코드입니다.',
   shippers_shipper_code_check: '화주코드는 영문 대문자, 숫자, -, _ 만 사용할 수 있습니다.',
   centers_center_code_key: '이미 사용 중인 센터코드입니다.',

@@ -49,7 +49,7 @@ export function TextField<T extends FieldValues>({
   type = 'text',
   placeholder,
 }: BaseProps<T> & {
-  type?: 'text' | 'email' | 'tel' | 'number' | 'password'
+  type?: 'text' | 'email' | 'tel' | 'number' | 'password' | 'date'
   placeholder?: string
 }) {
   return (

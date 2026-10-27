@@ -34,6 +34,31 @@ export const useCompany = () =>
     },
   })
 
+// ---------- 회사 CI 이미지 (Storage company-assets, 공개 조회) ----------
+const COMPANY_BUCKET = 'company-assets'
+export const CI_MAX_BYTES = 2 * 1024 * 1024
+
+export function companyAssetUrl(path: string | null | undefined) {
+  if (!path || !supabase) return null
+  return supabase.storage.from(COMPANY_BUCKET).getPublicUrl(path).data.publicUrl
+}
+
+// 같은 이름 캐시를 피하려고 업로드마다 새 경로를 쓴다
+export async function uploadCompanyCi(file: File) {
+  const ext = file.name.split('.').pop()?.toLowerCase() || 'png'
+  const path = `ci/${Date.now()}.${ext}`
+  const { error } = await supabase!.storage
+    .from(COMPANY_BUCKET)
+    .upload(path, file, { contentType: file.type })
+  if (error) throw error
+  return path
+}
+
+export async function removeCompanyAsset(path: string) {
+  const { error } = await supabase!.storage.from(COMPANY_BUCKET).remove([path])
+  if (error) throw error
+}
+
 export const useDefaultCenter = () =>
   useQuery({
     queryKey: masterKeys.center,
