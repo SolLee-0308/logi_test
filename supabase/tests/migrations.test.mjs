@@ -104,9 +104,23 @@ await expectErr(
   '센터 기본값 2개 금지',
   `insert into centers (center_code, center_name, is_default) values ('C002','2센터',true)`,
 )
+const shipCodes = await one(
+  `select string_agg(shipper_code, ',' order by shipper_code) c from shippers where id in ($1, $2)`,
+  [shipA, shipB],
+)
+check(
+  shipCodes.c === 'S00001,S00002',
+  '화주코드 자동채번 (입력값 무시, S00001·S00002)',
+  '화주코드 채번',
+  shipCodes.c,
+)
+const shipC = await one(`insert into shippers (shipper_name) values ('화주C') returning shipper_code`)
+check(shipC.shipper_code === 'S00003', '화주코드 생략 시 자동채번 (S00003)', '채번', shipC.shipper_code)
 await expectErr(
-  '화주코드 형식',
-  `insert into shippers (shipper_code, shipper_name) values ('sh a','x')`,
+  '화주코드 변경 불가',
+  `update shippers set shipper_code='S09999' where id=$1`,
+  [shipA],
+  '변경할 수 없습니다',
 )
 const itemA1 = await expectOk(
   '품목 등록(내부코드 자동채번)',
