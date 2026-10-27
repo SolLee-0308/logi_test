@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router'
 import { Search } from 'lucide-react'
 
-import { navGroups } from '@/app/navigation'
+import { useVisibleNavGroups } from '@/app/use-visible-nav'
 import { Button } from '@/components/ui/button'
 import {
   CommandDialog,
@@ -16,6 +16,7 @@ import {
 export function CommandMenu() {
   const [open, setOpen] = useState(false)
   const navigate = useNavigate()
+  const navGroups = useVisibleNavGroups()
 
   useEffect(() => {
     const onKeyDown = (e: KeyboardEvent) => {
@@ -32,12 +33,12 @@ export function CommandMenu() {
     <>
       <Button
         variant="outline"
-        className="h-9 w-full justify-start gap-2 text-muted-foreground sm:w-64"
+        className="text-muted-foreground h-9 w-full justify-start gap-2 sm:w-64"
         onClick={() => setOpen(true)}
       >
         <Search className="size-4" />
         <span className="flex-1 text-left">메뉴 검색…</span>
-        <kbd className="pointer-events-none hidden rounded border bg-muted px-1.5 font-mono text-[10px] sm:inline-block">
+        <kbd className="bg-muted pointer-events-none hidden rounded border px-1.5 font-mono text-[10px] sm:inline-block">
           Ctrl K
         </kbd>
       </Button>

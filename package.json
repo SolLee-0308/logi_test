@@ -11,10 +11,10 @@
     "typecheck": "tsc -b --noEmit",
     "format": "prettier --write src",
     "test": "vitest run",
-    "db:start": "supabase start",
-    "db:stop": "supabase stop",
-    "db:reset": "supabase db reset",
-    "db:types": "supabase gen types typescript --local > src/types/database.types.ts"
+    "db:types": "supabase gen types typescript --linked > src/types/database.types.ts",
+    "test:db": "node supabase/tests/migrations.test.mjs",
+    "db:push": "supabase db push",
+    "fn:deploy": "supabase functions deploy admin-users"
   },
   "dependencies": {
     "@hookform/resolvers": "^6.0.0",
@@ -42,6 +42,7 @@
     "zod": "^4.6.7"
   },
   "devDependencies": {
+    "@electric-sql/pglite": "^0.5.12",
     "@types/node": "^24.19.2",
     "@types/react": "^19.3.0",
     "@types/react-dom": "^19.3.0",

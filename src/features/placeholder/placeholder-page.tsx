@@ -9,9 +9,9 @@ export function PlaceholderPage() {
 
   return (
     <div className="flex min-h-[60vh] flex-col items-center justify-center gap-3 rounded-xl border border-dashed text-center">
-      <Construction className="size-10 text-muted-foreground" />
+      <Construction className="text-muted-foreground size-10" />
       <h1 className="text-xl font-semibold">{item?.title ?? '페이지를 찾을 수 없습니다'}</h1>
-      <p className="text-sm text-muted-foreground">
+      <p className="text-muted-foreground text-sm">
         {item ? '업무 프로세스 정의 후 구현 예정입니다.' : '주소를 다시 확인해 주세요.'}
       </p>
     </div>

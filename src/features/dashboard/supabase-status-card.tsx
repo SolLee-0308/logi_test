@@ -47,7 +47,7 @@ export function SupabaseStatusCard() {
         {badge}
       </CardHeader>
       <CardContent>
-        <p className="text-sm break-all text-muted-foreground">{message}</p>
+        <p className="text-muted-foreground text-sm break-all">{message}</p>
       </CardContent>
     </Card>
   )

@@ -1,7 +1,18 @@
 import { NavLink, useLocation } from 'react-router'
-import { Warehouse } from 'lucide-react'
+import { ChevronsUpDown, LogOut, Warehouse } from 'lucide-react'
 
-import { navGroups } from '@/app/navigation'
+import { useVisibleNavGroups } from '@/app/use-visible-nav'
+import { useAuth } from '@/lib/auth-context'
+import { ROLE_LABEL } from '@/lib/types'
+import { Avatar, AvatarFallback } from '@/components/ui/avatar'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import {
   Sidebar,
   SidebarContent,
@@ -19,6 +30,8 @@ import {
 
 export function AppSidebar() {
   const { pathname } = useLocation()
+  const navGroups = useVisibleNavGroups()
+  const { profile, signOut } = useAuth()
 
   return (
     <Sidebar collapsible="icon">
@@ -27,12 +40,12 @@ export function AppSidebar() {
           <SidebarMenuItem>
             <SidebarMenuButton size="lg" asChild>
               <NavLink to="/">
-                <div className="flex aspect-square size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <div className="bg-primary text-primary-foreground flex aspect-square size-8 items-center justify-center rounded-lg">
                   <Warehouse className="size-4" />
                 </div>
                 <div className="grid flex-1 text-left text-sm leading-tight">
                   <span className="truncate font-semibold">LOGI 입고관리</span>
-                  <span className="truncate text-xs text-muted-foreground">3PL Inbound</span>
+                  <span className="text-muted-foreground truncate text-xs">3PL Inbound</span>
                 </div>
               </NavLink>
             </SidebarMenuButton>
@@ -59,7 +72,7 @@ export function AppSidebar() {
                       </NavLink>
                     </SidebarMenuButton>
                     {!item.ready && (
-                      <SidebarMenuBadge className="text-[10px] text-muted-foreground">
+                      <SidebarMenuBadge className="text-muted-foreground text-[10px]">
                         준비 중
                       </SidebarMenuBadge>
                     )}
@@ -72,9 +85,38 @@ export function AppSidebar() {
       </SidebarContent>
 
       <SidebarFooter>
-        <p className="px-2 text-xs text-muted-foreground group-data-[collapsible=icon]:hidden">
-          v0.1.0 · MVP
-        </p>
+        <SidebarMenu>
+          <SidebarMenuItem>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <SidebarMenuButton size="lg">
+                  <Avatar className="size-8 rounded-lg">
+                    <AvatarFallback className="rounded-lg">
+                      {profile?.user_name.slice(0, 1)}
+                    </AvatarFallback>
+                  </Avatar>
+                  <div className="grid flex-1 text-left text-sm leading-tight">
+                    <span className="truncate font-medium">{profile?.user_name}</span>
+                    <span className="text-muted-foreground truncate text-xs">
+                      {profile && ROLE_LABEL[profile.role]}
+                    </span>
+                  </div>
+                  <ChevronsUpDown className="ml-auto size-4" />
+                </SidebarMenuButton>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent side="top" align="start" className="w-56">
+                <DropdownMenuLabel className="font-normal">
+                  <div className="text-sm font-medium">{profile?.user_name}</div>
+                  <div className="text-muted-foreground text-xs">{profile?.login_id}</div>
+                </DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={signOut}>
+                  <LogOut /> 로그아웃
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </SidebarMenuItem>
+        </SidebarMenu>
       </SidebarFooter>
       <SidebarRail />
     </Sidebar>
