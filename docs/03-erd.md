@@ -165,10 +165,16 @@ erDiagram
 | id | smallint | PK, CHECK(id=1) | 1행만 허용 |
 | company_name | varchar(100) | NOT NULL | 상호 |
 | biz_no | varchar(12) | | 사업자등록번호 |
+| corp_no | varchar(14) | CHECK `000000-0000000` | 법인등록번호 |
 | ceo_name | varchar(50) | | 대표자 |
-| address | text | | 주소 |
+| established_date | date | | 설립일 |
+| zip_code | varchar(5) | CHECK 숫자 5자리 | 우편번호 |
+| address | text | | 기본주소 (주소 검색 결과) |
+| address_detail | varchar(200) | | 상세주소 |
 | tel | varchar(20) | | 대표전화 |
+| fax | varchar(20) | | 팩스번호 |
 | email | varchar(100) | | 대표 이메일 |
+| ci_image_path | text | | 회사 CI 이미지 경로 (Storage `company-assets`) |
 
 **shippers** — 화주사
 | 컬럼 | 타입 | 제약 | 설명 |

@@ -48,9 +48,12 @@ export function TextField<T extends FieldValues>({
   disabled,
   type = 'text',
   placeholder,
+  format,
 }: BaseProps<T> & {
-  type?: 'text' | 'email' | 'tel' | 'number' | 'password'
+  type?: 'text' | 'email' | 'tel' | 'number' | 'password' | 'date'
   placeholder?: string
+  // 입력값 포맷 (예: 숫자만 받아 하이픈 삽입). 지정하면 숫자 키패드를 띄운다
+  format?: (value: string) => string
 }) {
   return (
     <Controller
@@ -65,6 +68,7 @@ export function TextField<T extends FieldValues>({
             placeholder={placeholder}
             disabled={disabled}
             aria-invalid={fieldState.invalid}
+            inputMode={format ? 'numeric' : undefined}
             {...field}
             value={field.value ?? ''}
             onChange={(e) =>
@@ -73,7 +77,9 @@ export function TextField<T extends FieldValues>({
                   ? e.target.value === ''
                     ? null
                     : Number(e.target.value)
-                  : e.target.value,
+                  : format
+                    ? format(e.target.value)
+                    : e.target.value,
               )
             }
           />

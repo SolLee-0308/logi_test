@@ -25,10 +25,18 @@ export type Company = Audit & {
   id: number
   company_name: string
   biz_no: string | null
+  corp_no: string | null
   ceo_name: string | null
+  established_date: string | null
+  zip_code: string | null
+  // 기본주소 (주소 검색 결과)
   address: string | null
+  address_detail: string | null
   tel: string | null
+  fax: string | null
   email: string | null
+  // Storage company-assets 버킷 내 경로
+  ci_image_path: string | null
 }
 
 export type Shipper = Audit & {
