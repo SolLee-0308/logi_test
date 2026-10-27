@@ -7,6 +7,8 @@ import { toast } from 'sonner'
 
 import { useAuth } from '@/lib/auth-context'
 import { toErrorMessage } from '@/lib/errors'
+import { formatBizNo, formatCorpNo, formatPhone, PHONE_REGEX } from '@/lib/format'
+import { cn } from '@/lib/utils'
 import {
   CI_MAX_BYTES,
   companyAssetUrl,
@@ -27,19 +29,25 @@ import { Skeleton } from '@/components/ui/skeleton'
 const optional = (re: RegExp, message: string) =>
   z.union([z.literal(''), z.string().regex(re, message)]).nullish()
 
+// 필수 문자열 (DB 값이 null 이어도 같은 안내 문구를 보여준다)
+const required = (message: string) => z.string(message).trim().min(1, message)
+
 const schema = z.object({
-  // 기본정보
-  company_name: z.string().trim().min(1, '상호를 입력하세요.').max(100),
-  biz_no: optional(/^\d{3}-\d{2}-\d{5}$/, '000-00-00000 형식으로 입력하세요.'),
-  corp_no: optional(/^\d{6}-\d{7}$/, '000000-0000000 형식으로 입력하세요.'),
-  ceo_name: z.string().max(50).nullish(),
+  // 기본정보 (상호·사업자등록번호·대표자 필수)
+  company_name: required('상호를 입력하세요.').max(100),
+  biz_no: required('사업자등록번호를 입력하세요.').regex(
+    /^\d{3}-\d{2}-\d{5}$/,
+    '사업자등록번호 10자리를 입력하세요.',
+  ),
+  corp_no: optional(/^\d{6}-\d{7}$/, '법인등록번호 13자리를 입력하세요.'),
+  ceo_name: required('대표자를 입력하세요.').max(50),
   established_date: z.string().nullish(),
   // 상세정보
   zip_code: optional(/^\d{5}$/, '우편번호는 숫자 5자리입니다.'),
   address: z.string().nullish(),
   address_detail: z.string().max(200).nullish(),
-  tel: z.string().max(20).nullish(),
-  fax: z.string().max(20).nullish(),
+  tel: optional(PHONE_REGEX, '전화번호를 끝까지 입력하세요.'),
+  fax: optional(PHONE_REGEX, '팩스번호를 끝까지 입력하세요.'),
   email: z.union([z.literal(''), z.email('이메일 형식이 아닙니다.')]).nullish(),
 })
 type FormValues = z.infer<typeof schema>
@@ -57,7 +65,8 @@ export function CompanyPage() {
   const [submitting, setSubmitting] = useState(false)
 
   useEffect(() => {
-    if (data) form.reset(data)
+    // 필수 항목이 아직 비어 있으면(null) 빈 문자열로 채워 입력 안내가 보이게 한다
+    if (data) form.reset({ ...data, biz_no: data.biz_no ?? '', ceo_name: data.ceo_name ?? '' })
   }, [data, form])
 
   const onSubmit = form.handleSubmit(async (values) => {
@@ -127,15 +136,18 @@ export function CompanyPage() {
                 control={form.control}
                 name="biz_no"
                 label="사업자등록번호"
-                placeholder="000-00-00000"
+                required
+                placeholder="숫자 10자리"
+                format={formatBizNo}
               />
               <TextField
                 control={form.control}
                 name="corp_no"
                 label="법인등록번호"
-                placeholder="000000-0000000"
+                placeholder="숫자 13자리"
+                format={formatCorpNo}
               />
-              <TextField control={form.control} name="ceo_name" label="대표자" />
+              <TextField control={form.control} name="ceo_name" label="대표자" required />
               <TextField
                 control={form.control}
                 name="established_date"
@@ -191,14 +203,16 @@ export function CompanyPage() {
                 name="tel"
                 label="전화번호"
                 type="tel"
-                placeholder="02-0000-0000"
+                placeholder="숫자만 입력"
+                format={formatPhone}
               />
               <TextField
                 control={form.control}
                 name="fax"
                 label="팩스번호"
                 type="tel"
-                placeholder="02-0000-0000"
+                placeholder="숫자만 입력"
+                format={formatPhone}
               />
               <div className="sm:col-span-2">
                 <TextField control={form.control} name="email" label="대표 이메일" type="email" />
@@ -227,7 +241,9 @@ export function CompanyPage() {
   )
 }
 
-// 회사 CI 이미지: 미리보기 + 선택·삭제 (실제 업로드는 저장할 때)
+const CI_TYPES = ['image/png', 'image/jpeg', 'image/webp', 'image/svg+xml']
+
+// 회사 CI 이미지: 큰 미리보기 영역에 드래그앤드롭 또는 클릭으로 선택 (실제 업로드는 저장할 때)
 function CiImageField({
   savedPath,
   change,
@@ -240,6 +256,8 @@ function CiImageField({
   disabled?: boolean
 }) {
   const inputRef = useRef<HTMLInputElement>(null)
+  // 파일을 영역 위로 끌고 왔는지 (테두리 강조용)
+  const [dragging, setDragging] = useState(false)
 
   // 새로 고른 파일은 브라우저 임시 URL로 미리보기
   const fileUrl = useMemo(
@@ -253,67 +271,107 @@ function CiImageField({
 
   const onPick = (file: File | undefined) => {
     if (!file) return
-    if (!file.type.startsWith('image/')) return toast.error('이미지 파일만 등록할 수 있습니다.')
+    if (!CI_TYPES.includes(file.type))
+      return toast.error('PNG, JPG, WEBP, SVG 이미지만 등록할 수 있습니다.')
     if (file.size > CI_MAX_BYTES) return toast.error('이미지는 2MB 이하만 등록할 수 있습니다.')
     onChange({ kind: 'new', file })
   }
 
+  const openPicker = () => !disabled && inputRef.current?.click()
+
   return (
     <div className="space-y-2">
-      <div className="text-sm font-medium">회사 CI 이미지</div>
-      <div className="flex flex-wrap items-center gap-4">
-        <div className="bg-muted/40 flex h-24 w-48 items-center justify-center overflow-hidden rounded-lg border">
-          {previewUrl ? (
-            <img
-              src={previewUrl}
-              alt="회사 CI"
-              className="max-h-full max-w-full object-contain p-2"
-            />
-          ) : (
-            <ImageIcon className="text-muted-foreground size-8" />
+      <div className="flex items-center justify-between">
+        <div className="text-sm font-medium">
+          회사 CI 이미지
+          {change.kind !== 'keep' && (
+            <span className="ml-2 text-xs font-normal text-amber-600">
+              변경됨 · 저장을 눌러야 반영됩니다
+            </span>
           )}
         </div>
-        <div className="space-y-2">
-          <div className="flex gap-2">
+        {previewUrl && !disabled && (
+          <div className="flex gap-1">
+            <Button type="button" variant="ghost" size="sm" onClick={openPicker}>
+              <ImageUp />
+              변경
+            </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="ghost"
               size="sm"
-              disabled={disabled}
-              onClick={() => inputRef.current?.click()}
+              onClick={() => onChange(savedPath ? { kind: 'remove' } : { kind: 'keep' })}
             >
-              <ImageUp />
-              {previewUrl ? '변경' : '이미지 선택'}
+              <Trash2 />
+              삭제
             </Button>
-            {previewUrl && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                disabled={disabled}
-                onClick={() => onChange(savedPath ? { kind: 'remove' } : { kind: 'keep' })}
-              >
-                <Trash2 />
-                삭제
-              </Button>
-            )}
           </div>
-          <p className="text-muted-foreground text-xs">
-            PNG·JPG·WEBP·SVG, 2MB 이하. 저장을 눌러야 반영됩니다.
-            {change.kind !== 'keep' && <span className="text-amber-600"> (변경됨)</span>}
-          </p>
-        </div>
-        <input
-          ref={inputRef}
-          type="file"
-          accept="image/png,image/jpeg,image/webp,image/svg+xml"
-          className="hidden"
-          onChange={(e) => {
-            onPick(e.target.files?.[0])
-            e.target.value = ''
-          }}
-        />
+        )}
       </div>
+
+      {/* 드롭 영역: 클릭하거나 이미지 파일을 끌어다 놓는다 */}
+      <div
+        role="button"
+        tabIndex={disabled ? -1 : 0}
+        aria-label="회사 CI 이미지 선택"
+        aria-disabled={disabled}
+        onClick={openPicker}
+        onKeyDown={(e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault()
+            openPicker()
+          }
+        }}
+        onDragOver={(e) => {
+          // 기본 동작(브라우저가 파일을 여는 것)을 막아야 drop 이벤트가 온다
+          e.preventDefault()
+          if (!disabled) setDragging(true)
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={(e) => {
+          e.preventDefault()
+          setDragging(false)
+          if (!disabled) onPick(e.dataTransfer.files?.[0])
+        }}
+        className={cn(
+          'bg-muted/30 relative flex h-56 w-full items-center justify-center overflow-hidden rounded-xl border-2 border-dashed transition-colors',
+          disabled ? 'cursor-default' : 'hover:bg-muted/50 cursor-pointer',
+          dragging && 'border-primary bg-primary/5',
+        )}
+      >
+        {previewUrl ? (
+          <img
+            src={previewUrl}
+            alt="회사 CI"
+            className="max-h-full max-w-full object-contain p-6"
+          />
+        ) : (
+          <div className="text-muted-foreground flex flex-col items-center gap-2 text-center text-sm">
+            <ImageIcon className="size-10" />
+            <div>
+              <span className="text-foreground font-medium">이미지를 끌어다 놓거나 클릭</span>
+              해서 선택하세요
+            </div>
+            <div className="text-xs">PNG·JPG·WEBP·SVG, 2MB 이하</div>
+          </div>
+        )}
+        {dragging && (
+          <div className="bg-primary/10 text-primary absolute inset-0 flex items-center justify-center text-sm font-medium">
+            여기에 놓으세요
+          </div>
+        )}
+      </div>
+
+      <input
+        ref={inputRef}
+        type="file"
+        accept={CI_TYPES.join(',')}
+        className="hidden"
+        onChange={(e) => {
+          onPick(e.target.files?.[0])
+          e.target.value = ''
+        }}
+      />
     </div>
   )
 }
