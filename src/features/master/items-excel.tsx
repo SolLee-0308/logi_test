@@ -1,8 +1,9 @@
-import { useState } from 'react'
-import { CheckCircle2, FileSpreadsheet, XCircle } from 'lucide-react'
+import { useRef, useState, type DragEvent } from 'react'
+import { CheckCircle2, FileSpreadsheet, Loader2, Upload, XCircle } from 'lucide-react'
 import { toast } from 'sonner'
 import { z } from 'zod'
 
+import { cn } from '@/lib/utils'
 import { toErrorMessage } from '@/lib/errors'
 import { queryClient } from '@/lib/query-client'
 import { supabase } from '@/lib/supabase'
@@ -64,16 +65,54 @@ export function ItemsExcelDialog({
   const { data: uoms } = useCodes('UOM')
   const [rows, setRows] = useState<ParsedRow[]>([])
   const [saving, setSaving] = useState(false)
+  // 파일 읽기 상태: 화면에 항상 결과를 보여 준다
+  const [fileName, setFileName] = useState<string | null>(null)
+  const [reading, setReading] = useState(false)
+  const [readError, setReadError] = useState<string | null>(null)
+  const [dragOver, setDragOver] = useState(false)
+  const inputRef = useRef<HTMLInputElement>(null)
 
   const valid = rows.filter((r) => !r.error && !r.saved)
 
   const onFile = async (file: File) => {
+    setFileName(file.name)
+    setReadError(null)
+    setRows([])
+    if (!/.(xlsx|xls|csv)$/i.test(file.name)) {
+      setReadError('엑셀 파일(.xlsx, .xls, .csv)만 업로드할 수 있습니다.')
+      return
+    }
+    setReading(true)
+    try {
+      await parseFile(file)
+    } catch (e) {
+      setReadError(`파일을 읽지 못했습니다. (${toErrorMessage(e)})`)
+    } finally {
+      setReading(false)
+    }
+  }
+
+  const parseFile = async (file: File) => {
     const XLSX = await loadXlsx()
-    const wb = XLSX.read(await file.arrayBuffer())
+    const wb = XLSX.read(await file.arrayBuffer(), { type: 'array' })
     const json = XLSX.utils.sheet_to_json<Record<string, unknown>>(wb.Sheets[wb.SheetNames[0]], {
       defval: '',
       raw: false,
+      blankrows: false,
     })
+    if (json.length === 0) {
+      setReadError(
+        `첫 번째 시트(${wb.SheetNames[0]})에 데이터 행이 없습니다. 2행부터 품목을 입력하세요.`,
+      )
+      return
+    }
+    const missing = HEADERS.slice(0, 3).filter((h) => !(h in json[0]))
+    if (missing.length) {
+      setReadError(
+        `양식의 열 제목이 다릅니다. 누락된 열: ${missing.join(', ')} — 양식을 다시 내려받아 작성하세요.`,
+      )
+      return
+    }
     const shipperByCode = new Map((shippers ?? []).map((s) => [s.shipper_code, s]))
     const uomSet = new Set((uoms ?? []).map((u) => u.code))
     const seen = new Set<string>()
@@ -137,8 +176,19 @@ export function ItemsExcelDialog({
   }
 
   const close = (o: boolean) => {
-    if (!o) setRows([])
+    if (!o) {
+      setRows([])
+      setFileName(null)
+      setReadError(null)
+    }
     onOpenChange(o)
+  }
+
+  const onDrop = (e: DragEvent) => {
+    e.preventDefault()
+    setDragOver(false)
+    const f = e.dataTransfer.files?.[0]
+    if (f) onFile(f)
   }
 
   return (
@@ -151,32 +201,74 @@ export function ItemsExcelDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex flex-wrap items-center gap-2">
+        <div className="flex items-center justify-between gap-2">
+          <p className="text-muted-foreground text-sm">
+            ① 양식 다운로드 → ② 품목 시트에 작성 → ③ 아래 영역에 파일 올리기 → ④ 결과 확인 후 저장
+          </p>
           <Button variant="outline" onClick={() => downloadTemplate(shippers ?? [], uoms ?? [])}>
             <FileSpreadsheet /> 양식 다운로드
           </Button>
-          <label className="inline-flex">
-            <input
-              type="file"
-              accept=".xlsx,.xls,.csv"
-              className="hidden"
-              onChange={(e) => {
-                const f = e.target.files?.[0]
-                if (f) onFile(f)
-                e.target.value = ''
-              }}
-            />
-            <span className="bg-primary text-primary-foreground inline-flex h-8 cursor-pointer items-center rounded-lg px-3 text-sm font-medium">
-              파일 선택
-            </span>
-          </label>
-          {rows.length > 0 && (
-            <span className="text-muted-foreground text-sm">
-              전체 {rows.length}건 · 저장 가능 {valid.length}건 · 오류{' '}
-              {rows.filter((r) => r.error).length}건
-            </span>
-          )}
         </div>
+
+        <input
+          ref={inputRef}
+          type="file"
+          accept=".xlsx,.xls,.csv"
+          className="hidden"
+          onChange={(e) => {
+            const f = e.target.files?.[0]
+            if (f) onFile(f)
+            e.target.value = ''
+          }}
+        />
+        <button
+          type="button"
+          onClick={() => inputRef.current?.click()}
+          onDragOver={(e) => {
+            e.preventDefault()
+            setDragOver(true)
+          }}
+          onDragLeave={() => setDragOver(false)}
+          onDrop={onDrop}
+          className={cn(
+            'flex w-full flex-col items-center justify-center gap-2 rounded-xl border-2 border-dashed p-6 text-sm transition-colors',
+            dragOver ? 'border-primary bg-primary/5' : 'hover:bg-muted/50',
+          )}
+        >
+          {reading ? (
+            <Loader2 className="text-muted-foreground size-6 animate-spin" />
+          ) : (
+            <Upload className="text-muted-foreground size-6" />
+          )}
+          <span className="font-medium">
+            {reading ? '파일을 읽는 중…' : '여기를 클릭하거나 엑셀 파일을 끌어다 놓으세요'}
+          </span>
+          {fileName && <span className="text-muted-foreground">선택한 파일: {fileName}</span>}
+        </button>
+
+        {readError && (
+          <div className="border-destructive/30 bg-destructive/5 text-destructive flex items-start gap-2 rounded-lg border p-3 text-sm">
+            <XCircle className="mt-0.5 size-4 shrink-0" />
+            <span>{readError}</span>
+          </div>
+        )}
+
+        {rows.length > 0 && (
+          <div className="flex flex-wrap gap-2 text-sm">
+            <span className="bg-muted rounded-md px-2 py-1">전체 {rows.length}건</span>
+            <span className="rounded-md bg-emerald-500/10 px-2 py-1 text-emerald-700 dark:text-emerald-400">
+              저장 가능 {valid.length}건
+            </span>
+            <span className="bg-destructive/10 text-destructive rounded-md px-2 py-1">
+              오류 {rows.filter((r) => r.error).length}건
+            </span>
+            {rows.some((r) => r.saved) && (
+              <span className="rounded-md bg-blue-500/10 px-2 py-1 text-blue-700 dark:text-blue-400">
+                저장됨 {rows.filter((r) => r.saved).length}건
+              </span>
+            )}
+          </div>
+        )}
 
         {rows.length > 0 && (
           <div className="max-h-[50vh] overflow-auto rounded-lg border">

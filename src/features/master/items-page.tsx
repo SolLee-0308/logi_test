@@ -141,8 +141,12 @@ export function ItemsPage() {
         description="화주사별 품목을 관리합니다. 3PL 내부코드는 자동으로 채번되며, 화주사 품목코드와 별도로 관리됩니다."
         actions={
           <>
-            <Button variant="outline" onClick={() => downloadItems(rows ?? [], shipperMap, uomMap)}>
-              <Download /> 엑셀 다운로드
+            <Button
+              variant="outline"
+              title="현재 화면에 조회된 품목(내부코드 포함)을 엑셀로 내려받습니다. 등록용 양식은 '엑셀 일괄등록'에 있습니다."
+              onClick={() => downloadItems(rows ?? [], shipperMap, uomMap)}
+            >
+              <Download /> 목록 다운로드
             </Button>
             {isAdmin && (
               <>
