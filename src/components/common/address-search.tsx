@@ -1,6 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
+import type { FieldValues, UseFormReturn } from 'react-hook-form'
 import { MapPin } from 'lucide-react'
 
+import { cn } from '@/lib/utils'
+import { TextField } from '@/components/common/form-fields'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -132,5 +135,56 @@ export function AddressSearchButton({
         </DialogContent>
       </Dialog>
     </>
+  )
+}
+
+// 주소 입력 블록: 우편번호 + 주소 검색 + 기본주소 + 상세주소
+// 폼에 zip_code / address / address_detail 필드가 있어야 한다 (회사정보·화주사 공통)
+type AddressValues = {
+  zip_code?: string | null
+  address?: string | null
+  address_detail?: string | null
+}
+
+export function AddressFields<T extends AddressValues & FieldValues>({
+  form,
+  disabled,
+  className,
+}: {
+  form: UseFormReturn<T>
+  disabled?: boolean
+  className?: string
+}) {
+  // 필드 이름이 고정이라 내부에서는 주소 필드 타입으로만 다룬다
+  const f = form as unknown as UseFormReturn<AddressValues>
+
+  return (
+    <div className={cn('grid gap-5', className)}>
+      <div className="flex items-end gap-2">
+        <div className="w-36">
+          <TextField control={f.control} name="zip_code" label="우편번호" placeholder="00000" />
+        </div>
+        <AddressSearchButton
+          disabled={disabled}
+          onSelect={({ zipCode, address }) => {
+            f.setValue('zip_code', zipCode, { shouldDirty: true, shouldValidate: true })
+            f.setValue('address', address, { shouldDirty: true })
+            f.setFocus('address_detail')
+          }}
+        />
+      </div>
+      <TextField
+        control={f.control}
+        name="address"
+        label="기본주소"
+        placeholder="주소 검색을 누르세요"
+      />
+      <TextField
+        control={f.control}
+        name="address_detail"
+        label="상세주소"
+        placeholder="동·층·호수 등"
+      />
+    </div>
   )
 }

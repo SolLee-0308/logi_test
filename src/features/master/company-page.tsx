@@ -19,7 +19,7 @@ import {
   useCompany,
   useSaveRow,
 } from '@/features/master/api'
-import { AddressSearchButton } from '@/components/common/address-search'
+import { AddressFields } from '@/components/common/address-search'
 import { PageHeader } from '@/components/common/page-header'
 import { TextField } from '@/components/common/form-fields'
 import { Button } from '@/components/ui/button'
@@ -164,40 +164,7 @@ export function CompanyPage() {
             </CardHeader>
             <CardContent className="grid gap-5 sm:grid-cols-2">
               {/* 주소: 검색으로 우편번호·기본주소를 채우고 상세주소만 직접 입력 */}
-              <div className="flex items-end gap-2 sm:col-span-2">
-                <div className="w-36">
-                  <TextField
-                    control={form.control}
-                    name="zip_code"
-                    label="우편번호"
-                    placeholder="00000"
-                  />
-                </div>
-                <AddressSearchButton
-                  disabled={!isAdmin}
-                  onSelect={({ zipCode, address }) => {
-                    form.setValue('zip_code', zipCode, { shouldDirty: true, shouldValidate: true })
-                    form.setValue('address', address, { shouldDirty: true })
-                    form.setFocus('address_detail')
-                  }}
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <TextField
-                  control={form.control}
-                  name="address"
-                  label="기본주소"
-                  placeholder="주소 검색을 누르세요"
-                />
-              </div>
-              <div className="sm:col-span-2">
-                <TextField
-                  control={form.control}
-                  name="address_detail"
-                  label="상세주소"
-                  placeholder="동·층·호수 등"
-                />
-              </div>
+              <AddressFields form={form} disabled={!isAdmin} className="sm:col-span-2" />
               <TextField
                 control={form.control}
                 name="tel"

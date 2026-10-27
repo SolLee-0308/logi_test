@@ -44,7 +44,10 @@ export type Shipper = Audit & {
   shipper_code: string
   shipper_name: string
   biz_no: string | null
+  zip_code: string | null
+  // 기본주소 (주소 검색 결과)
   address: string | null
+  address_detail: string | null
   manager_name: string | null
   manager_tel: string | null
   manager_email: string | null
