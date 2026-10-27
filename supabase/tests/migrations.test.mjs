@@ -819,6 +819,35 @@ const tr2 = await one(
 )
 check(tr2.n === 2, '전표 추적: 입고예정 → ASN → 상차완료 연결', '추적', tr2.n)
 
+console.log('■ 회사정보 상세 항목')
+await as(ADMIN)
+await expectOk(
+  '관리자 회사 상세정보 저장',
+  `update company set corp_no='110111-1234567', established_date='2020-03-02', zip_code='06236',
+     address='서울 강남구 테헤란로 123', address_detail='10층', fax='02-1234-5678',
+     ci_image_path='ci/logo.png' where id=1`,
+)
+await expectErr(
+  '법인등록번호 형식 검사',
+  `update company set corp_no='1101111234567' where id=1`,
+  [],
+  'corp_no',
+)
+await expectErr('우편번호 형식 검사', `update company set zip_code='123' where id=1`, [], 'zip_code')
+await as(OPER)
+const opCompany = await db.query(`update company set fax='000' where id=1 returning id`)
+check(opCompany.rows.length === 0, '운영자는 회사정보 수정 불가', '회사정보 권한', opCompany.rows.length)
+await as(null)
+const companyHist = await one(
+  `select corp_no, zip_code, address_detail from company_hist order by hist_id desc limit 1`,
+)
+check(
+  companyHist.corp_no === '110111-1234567' && companyHist.address_detail === '10층',
+  '회사정보 상세 항목 이력 적재',
+  '회사 이력',
+  JSON.stringify(companyHist),
+)
+
 console.log('■ 이력 테이블 재구성 (기존 이력이 있는 상태)')
 await as(null)
 const histBefore = await one(`select count(*)::int n, max(hist_id)::int m from items_hist`)
