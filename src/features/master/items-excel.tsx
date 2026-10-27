@@ -152,7 +152,7 @@ export function ItemsExcelDialog({
         </DialogHeader>
 
         <div className="flex flex-wrap items-center gap-2">
-          <Button variant="outline" onClick={downloadTemplate}>
+          <Button variant="outline" onClick={() => downloadTemplate(shippers ?? [], uoms ?? [])}>
             <FileSpreadsheet /> 양식 다운로드
           </Button>
           <label className="inline-flex">
