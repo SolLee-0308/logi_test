@@ -41,9 +41,9 @@ export const navGroups: NavGroup[] = [
     label: '입고',
     items: [
       { title: '입고예정', url: '/inbound/plans', icon: ClipboardCheck, ready: true },
-      { title: 'ASN·상차지시', url: '/inbound/asn', icon: Truck },
+      { title: 'ASN·상차지시', url: '/inbound/asn', icon: Truck, ready: true },
       { title: '입고현황', url: '/inbound/status', icon: Boxes },
-      { title: 'PDA 작업', url: '/pda', icon: ScanBarcode },
+      { title: 'PDA 작업', url: '/pda', icon: ScanBarcode, ready: true },
     ],
   },
   {

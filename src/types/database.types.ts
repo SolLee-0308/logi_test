@@ -225,6 +225,13 @@ export type Database = {
             foreignKeyName: 'asn_lines_asn_id_fkey'
             columns: ['asn_id']
             isOneToOne: false
+            referencedRelation: 'v_asns'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'asn_lines_asn_id_fkey'
+            columns: ['asn_id']
+            isOneToOne: false
             referencedRelation: 'v_doc_trace'
             referencedColumns: ['asn_id']
           },
@@ -241,6 +248,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'inbound_plan_lines'
             referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'asn_lines_plan_line_id_fkey'
+            columns: ['plan_line_id']
+            isOneToOne: false
+            referencedRelation: 'v_open_plan_lines'
+            referencedColumns: ['plan_line_id']
           },
         ]
       }
@@ -1342,6 +1356,13 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
+            foreignKeyName: 'loading_lines_asn_line_id_fkey'
+            columns: ['asn_line_id']
+            isOneToOne: false
+            referencedRelation: 'v_asn_lines'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'loading_lines_item_id_fkey'
             columns: ['item_id']
             isOneToOne: false
@@ -1354,6 +1375,13 @@ export type Database = {
             isOneToOne: false
             referencedRelation: 'loadings'
             referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'loading_lines_loading_id_fkey'
+            columns: ['loading_id']
+            isOneToOne: false
+            referencedRelation: 'v_asns'
+            referencedColumns: ['loading_id']
           },
         ]
       }
@@ -1408,6 +1436,138 @@ export type Database = {
         }
         Relationships: []
       }
+      loading_scans: {
+        Row: {
+          asn_line_id: string
+          created_at: string
+          created_by: string | null
+          id: string
+          item_id: string
+          loading_id: string
+          method: string
+          qty: number
+          scanned_barcode: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          asn_line_id: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id: string
+          loading_id: string
+          method: string
+          qty: number
+          scanned_barcode?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Update: {
+          asn_line_id?: string
+          created_at?: string
+          created_by?: string | null
+          id?: string
+          item_id?: string
+          loading_id?: string
+          method?: string
+          qty?: number
+          scanned_barcode?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'loading_scans_asn_line_id_fkey'
+            columns: ['asn_line_id']
+            isOneToOne: false
+            referencedRelation: 'asn_lines'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'loading_scans_asn_line_id_fkey'
+            columns: ['asn_line_id']
+            isOneToOne: false
+            referencedRelation: 'v_asn_lines'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'loading_scans_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: false
+            referencedRelation: 'items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'loading_scans_loading_id_fkey'
+            columns: ['loading_id']
+            isOneToOne: false
+            referencedRelation: 'loadings'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'loading_scans_loading_id_fkey'
+            columns: ['loading_id']
+            isOneToOne: false
+            referencedRelation: 'v_asns'
+            referencedColumns: ['loading_id']
+          },
+        ]
+      }
+      loading_scans_hist: {
+        Row: {
+          asn_line_id: string
+          created_at: string
+          created_by: string | null
+          hist_at: string
+          hist_by: string | null
+          hist_id: number
+          hist_op: string
+          id: string
+          item_id: string
+          loading_id: string
+          method: string
+          qty: number
+          scanned_barcode: string | null
+          updated_at: string
+          updated_by: string | null
+        }
+        Insert: {
+          asn_line_id: string
+          created_at: string
+          created_by?: string | null
+          hist_at?: string
+          hist_by?: string | null
+          hist_id?: never
+          hist_op: string
+          id: string
+          item_id: string
+          loading_id: string
+          method: string
+          qty: number
+          scanned_barcode?: string | null
+          updated_at: string
+          updated_by?: string | null
+        }
+        Update: {
+          asn_line_id?: string
+          created_at?: string
+          created_by?: string | null
+          hist_at?: string
+          hist_by?: string | null
+          hist_id?: never
+          hist_op?: string
+          id?: string
+          item_id?: string
+          loading_id?: string
+          method?: string
+          qty?: number
+          scanned_barcode?: string | null
+          updated_at?: string
+          updated_by?: string | null
+        }
+        Relationships: []
+      }
       loadings: {
         Row: {
           asn_id: string
@@ -1454,6 +1614,13 @@ export type Database = {
             columns: ['asn_id']
             isOneToOne: true
             referencedRelation: 'asns'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'loadings_asn_id_fkey'
+            columns: ['asn_id']
+            isOneToOne: true
+            referencedRelation: 'v_asns'
             referencedColumns: ['id']
           },
           {
@@ -1779,6 +1946,13 @@ export type Database = {
             referencedColumns: ['id']
           },
           {
+            foreignKeyName: 'receipt_lines_asn_line_id_fkey'
+            columns: ['asn_line_id']
+            isOneToOne: false
+            referencedRelation: 'v_asn_lines'
+            referencedColumns: ['id']
+          },
+          {
             foreignKeyName: 'receipt_lines_item_id_fkey'
             columns: ['item_id']
             isOneToOne: false
@@ -1921,6 +2095,13 @@ export type Database = {
             columns: ['asn_id']
             isOneToOne: true
             referencedRelation: 'asns'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'receipts_asn_id_fkey'
+            columns: ['asn_id']
+            isOneToOne: true
+            referencedRelation: 'v_asns'
             referencedColumns: ['id']
           },
           {
@@ -2244,6 +2425,131 @@ export type Database = {
       }
     }
     Views: {
+      v_asn_lines: {
+        Row: {
+          asn_id: string | null
+          barcode: string | null
+          created_at: string | null
+          created_by: string | null
+          diff_qty: number | null
+          id: string | null
+          internal_code: string | null
+          item_id: string | null
+          item_name: string | null
+          line_no: number | null
+          loaded_qty: number | null
+          order_qty: number | null
+          plan_line_id: string | null
+          plan_no: string | null
+          received_qty: number | null
+          return_qty: number | null
+          shipper_item_code: string | null
+          spec: string | null
+          uom_code: string | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'asn_lines_asn_id_fkey'
+            columns: ['asn_id']
+            isOneToOne: false
+            referencedRelation: 'asns'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'asn_lines_asn_id_fkey'
+            columns: ['asn_id']
+            isOneToOne: false
+            referencedRelation: 'v_asns'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'asn_lines_asn_id_fkey'
+            columns: ['asn_id']
+            isOneToOne: false
+            referencedRelation: 'v_doc_trace'
+            referencedColumns: ['asn_id']
+          },
+          {
+            foreignKeyName: 'asn_lines_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: false
+            referencedRelation: 'items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'asn_lines_plan_line_id_fkey'
+            columns: ['plan_line_id']
+            isOneToOne: false
+            referencedRelation: 'inbound_plan_lines'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'asn_lines_plan_line_id_fkey'
+            columns: ['plan_line_id']
+            isOneToOne: false
+            referencedRelation: 'v_open_plan_lines'
+            referencedColumns: ['plan_line_id']
+          },
+        ]
+      }
+      v_asns: {
+        Row: {
+          asn_date: string | null
+          asn_no: string | null
+          center_address: string | null
+          center_id: string | null
+          center_name: string | null
+          created_at: string | null
+          created_by: string | null
+          created_by_name: string | null
+          driver_name: string | null
+          driver_tel: string | null
+          id: string | null
+          line_count: number | null
+          loaded_at: string | null
+          loading_id: string | null
+          loading_no: string | null
+          loading_status: string | null
+          remark: string | null
+          shipper_code: string | null
+          shipper_id: string | null
+          shipper_name: string | null
+          status: string | null
+          tonnage: number | null
+          total_loaded_qty: number | null
+          total_order_qty: number | null
+          updated_at: string | null
+          updated_by: string | null
+          vehicle_id: string | null
+          vehicle_no: string | null
+          vehicle_type_code: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'asns_center_id_fkey'
+            columns: ['center_id']
+            isOneToOne: false
+            referencedRelation: 'centers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'asns_shipper_id_fkey'
+            columns: ['shipper_id']
+            isOneToOne: false
+            referencedRelation: 'shippers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'asns_vehicle_id_fkey'
+            columns: ['vehicle_id']
+            isOneToOne: false
+            referencedRelation: 'vehicles'
+            referencedColumns: ['id']
+          },
+        ]
+      }
       v_doc_trace: {
         Row: {
           approved_qty: number | null
@@ -2326,8 +2632,68 @@ export type Database = {
           },
         ]
       }
+      v_open_plan_lines: {
+        Row: {
+          approved_qty: number | null
+          asn_qty: number | null
+          internal_code: string | null
+          item_id: string | null
+          item_name: string | null
+          line_no: number | null
+          plan_date: string | null
+          plan_id: string | null
+          plan_line_id: string | null
+          plan_no: string | null
+          remaining_qty: number | null
+          shipper_id: string | null
+          shipper_item_code: string | null
+          spec: string | null
+          uom_code: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'inbound_plan_lines_item_id_fkey'
+            columns: ['item_id']
+            isOneToOne: false
+            referencedRelation: 'items'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'inbound_plan_lines_plan_id_fkey'
+            columns: ['plan_id']
+            isOneToOne: false
+            referencedRelation: 'inbound_plans'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'inbound_plan_lines_plan_id_fkey'
+            columns: ['plan_id']
+            isOneToOne: false
+            referencedRelation: 'v_doc_trace'
+            referencedColumns: ['plan_id']
+          },
+          {
+            foreignKeyName: 'inbound_plan_lines_plan_id_fkey'
+            columns: ['plan_id']
+            isOneToOne: false
+            referencedRelation: 'v_inbound_plans'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'inbound_plans_shipper_id_fkey'
+            columns: ['shipper_id']
+            isOneToOne: false
+            referencedRelation: 'shippers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Functions: {
+      adjust_loading_qty: {
+        Args: { p_asn_line_id: string; p_loading_id: string; p_qty: number }
+        Returns: undefined
+      }
       approve_inbound_plan: {
         Args: { p_lines: Json; p_plan_id: string }
         Returns: undefined
@@ -2338,10 +2704,34 @@ export type Database = {
       auth_user_type: { Args: never; Returns: string }
       can_access_shipper: { Args: { p_shipper_id: string }; Returns: boolean }
       can_approve: { Args: never; Returns: boolean }
+      cancel_asn: { Args: { p_asn_id: string }; Returns: undefined }
       cancel_inbound_plan: { Args: { p_plan_id: string }; Returns: undefined }
+      complete_loading: { Args: { p_loading_id: string }; Returns: undefined }
       fn_allow_status_change: { Args: never; Returns: undefined }
       fn_enable_audit: { Args: { p_table: string }; Returns: undefined }
       fn_enable_history: { Args: { p_table: string }; Returns: undefined }
+      fn_loading_for_update: {
+        Args: { p_loading_id: string }
+        Returns: {
+          asn_id: string
+          completed_at: string | null
+          created_at: string
+          created_by: string | null
+          id: string
+          loading_no: string
+          started_at: string
+          status: string
+          updated_at: string
+          updated_by: string | null
+          worker_id: string | null
+        }
+        SetofOptions: {
+          from: '*'
+          to: 'loadings'
+          isOneToOne: true
+          isSetofReturn: false
+        }
+      }
       fn_next_doc_no: {
         Args: { p_date?: string; p_prefix: string }
         Returns: string
@@ -2362,6 +2752,17 @@ export type Database = {
         Args: { p_item_id: string; p_reason: string }
         Returns: undefined
       }
+      save_asn: {
+        Args: {
+          p_asn_date: string
+          p_asn_id: string
+          p_lines: Json
+          p_remark: string
+          p_shipper_id: string
+          p_vehicle_id: string
+        }
+        Returns: string
+      }
       save_inbound_plan: {
         Args: {
           p_lines: Json
@@ -2373,6 +2774,16 @@ export type Database = {
         }
         Returns: string
       }
+      scan_loading: {
+        Args: {
+          p_asn_line_id: string
+          p_barcode: string
+          p_loading_id: string
+          p_qty: number
+        }
+        Returns: string
+      }
+      start_loading: { Args: { p_asn_no: string }; Returns: string }
     }
     Enums: {
       [_ in never]: never

@@ -178,3 +178,82 @@ export type InboundPlanLine = Audit & {
   adjust_reason: string | null
   remark: string | null
 }
+
+export type AsnStatus = 'REGISTERED' | 'LOADED' | 'RECEIVING' | 'RECEIVED' | 'CANCELLED'
+
+export const ASN_STATUS_LABEL: Record<AsnStatus, string> = {
+  REGISTERED: '등록',
+  LOADED: '상차완료',
+  RECEIVING: '검수중',
+  RECEIVED: '입고완료',
+  CANCELLED: '취소',
+}
+
+// v_asns
+export type AsnSummary = Audit & {
+  id: string
+  asn_no: string
+  shipper_id: string
+  center_id: string
+  asn_date: string
+  vehicle_id: string
+  vehicle_no: string
+  status: AsnStatus
+  remark: string | null
+  shipper_code: string
+  shipper_name: string
+  vehicle_type_code: string | null
+  tonnage: number | null
+  driver_name: string | null
+  driver_tel: string | null
+  center_name: string
+  center_address: string | null
+  loading_id: string | null
+  loading_no: string | null
+  loading_status: 'LOADING' | 'COMPLETED' | null
+  loaded_at: string | null
+  line_count: number
+  total_order_qty: number
+  total_loaded_qty: number
+  created_by_name: string | null
+}
+
+// v_asn_lines
+export type AsnLineView = {
+  id: string
+  asn_id: string
+  line_no: number
+  plan_line_id: string
+  item_id: string
+  order_qty: number
+  loaded_qty: number
+  received_qty: number
+  return_qty: number
+  diff_qty: number
+  plan_no: string
+  internal_code: string
+  shipper_item_code: string
+  item_name: string
+  spec: string | null
+  barcode: string | null
+  uom_code: string
+}
+
+// v_open_plan_lines
+export type OpenPlanLine = {
+  plan_line_id: string
+  plan_id: string
+  plan_no: string
+  plan_date: string
+  shipper_id: string
+  line_no: number
+  item_id: string
+  internal_code: string
+  shipper_item_code: string
+  item_name: string
+  spec: string | null
+  uom_code: string
+  approved_qty: number
+  asn_qty: number
+  remaining_qty: number
+}

@@ -676,6 +676,149 @@ await expectErr(
 await expectOk('3PL 반려', `select reject_inbound_plan($1, '당일 입고 마감')`, [planId4])
 await as(null)
 
+console.log('■ 4단계: ASN 등록 (화주)')
+const asnLines = (q1, q2) =>
+  JSON.stringify([
+    { plan_line_id: lines2[0].id, order_qty: q1 },
+    { plan_line_id: lines2[1].id, order_qty: q2 },
+  ])
+await as(OPER)
+await expectErr(
+  '3PL은 ASN 등록 불가',
+  `select save_asn(null, $1, current_date, $2, null, $3::jsonb)`,
+  [shipA, vA.id, asnLines(10, 0)],
+  '화주사 사용자가 등록',
+)
+await as(SA)
+await expectErr(
+  '다른 일자 승인분 배정 불가',
+  `select save_asn(null, $1, current_date + 1, $2, null, $3::jsonb)`,
+  [shipA, vA.id, asnLines(10, 0)],
+  '같은 날짜',
+)
+const asnA = (
+  await one(`select save_asn(null, $1, current_date, $2, '1호차', $3::jsonb) id`, [
+    shipA,
+    vA.id,
+    asnLines(60, 20),
+  ])
+).id
+ok('ASN 등록 (60 + 20)')
+await expectErr(
+  '2호차 50 배정 → 승인 100 초과',
+  `select save_asn(null, $1, current_date, $2, null, $3::jsonb)`,
+  [shipA, vA.id, JSON.stringify([{ plan_line_id: lines2[0].id, order_qty: 50 }])],
+  '승인 수량을 초과',
+)
+await expectOk(
+  'ASN 수정 (70 + 20)',
+  `select save_asn($1, $2, current_date, $3, '1호차', $4::jsonb)`,
+  [asnA, shipA, vA.id, asnLines(70, 20)],
+)
+const open1 = await one(`select remaining_qty from v_open_plan_lines where plan_line_id=$1`, [
+  lines2[0].id,
+])
+check(open1.remaining_qty == 30, '잔여 배정 가능 수량 30', '잔여 수량', open1.remaining_qty)
+const asnRow = await one(
+  `select asn_no, vehicle_no, line_count, total_order_qty from v_asns where id=$1`,
+  [asnA],
+)
+check(
+  asnRow.line_count === 2 && asnRow.total_order_qty == 90,
+  `v_asns: ${asnRow.asn_no} 차량 ${asnRow.vehicle_no} 2품목 90`,
+  'v_asns',
+  JSON.stringify(asnRow),
+)
+await as(SB)
+const asnB = await one(`select count(*)::int n from v_asns where id=$1`, [asnA])
+check(asnB.n === 0, '화주B는 화주A ASN 조회 불가', 'ASN RLS', asnB.n)
+await expectErr(
+  '화주B는 화주A 상차 시작 불가',
+  `select start_loading($1)`,
+  [asnRow.asn_no],
+  '찾을 수 없습니다',
+)
+await as(OPER)
+const asnOp = await one(`select count(*)::int n from v_asns where id=$1`, [asnA])
+check(asnOp.n === 1, '3PL은 ASN 조회 가능', '3PL 조회', asnOp.n)
+
+console.log('■ 4단계: PDA 상차')
+await as(SA)
+const loadingId = (await one(`select start_loading($1) id`, [asnRow.asn_no.toLowerCase()])).id
+ok('상차지시서 바코드로 상차 시작 (대소문자 무관)')
+const again = (await one(`select start_loading($1) id`, [asnRow.asn_no])).id
+check(again === loadingId, '같은 ASN 재스캔 시 이어서 상차', '상차 이어하기', again)
+await expectErr(
+  '상차 시작 후 ASN 수정 불가',
+  `select save_asn($1, $2, current_date, $3, null, $4::jsonb)`,
+  [asnA, shipA, vA.id, asnLines(60, 20)],
+  '상차가 시작',
+)
+await expectErr('상차 시작 후 ASN 취소 불가', `select cancel_asn($1)`, [asnA], '상차가 시작되기 전')
+await expectErr(
+  '지시에 없는 바코드 (R6)',
+  `select scan_loading($1, '999999', null, 1)`,
+  [loadingId],
+  '상차지시에 없는 품목 바코드',
+)
+await expectOk('사과 스캔 30', `select scan_loading($1, '880001', null, 30)`, [loadingId])
+await expectOk('사과 스캔 30 (누적)', `select scan_loading($1, '880001', null, 30)`, [loadingId])
+await expectOk('우유 목록 선택 20', `select scan_loading($1, null, $2, 20)`, [
+  loadingId,
+  (await one(`select id from asn_lines where asn_id=$1 and plan_line_id=$2`, [asnA, lines2[1].id]))
+    .id,
+])
+const ld1 = await one(
+  `select loaded_qty, order_qty from asn_lines where asn_id=$1 and plan_line_id=$2`,
+  [asnA, lines2[0].id],
+)
+check(ld1.loaded_qty == 60, '스캔 누적 → 사과 상차 60 / 지시 70', '누적', JSON.stringify(ld1))
+await expectErr(
+  '지시수량과 다르면 상차완료 불가 (R7)',
+  `select complete_loading($1)`,
+  [loadingId],
+  '지시수량과 다른 품목',
+)
+const line1 = (
+  await one(`select id from asn_lines where asn_id=$1 and plan_line_id=$2`, [asnA, lines2[0].id])
+).id
+await expectErr(
+  '정정 수량 음수 불가',
+  `select adjust_loading_qty($1, $2, -1)`,
+  [loadingId, line1],
+  '0 이상',
+)
+await expectOk('사과 수량 70으로 정정', `select adjust_loading_qty($1, $2, 70)`, [loadingId, line1])
+await expectOk('상차완료', `select complete_loading($1)`, [loadingId])
+const done = await one(
+  `select a.status asn_status, l.status loading_status from asns a join loadings l on l.asn_id=a.id where a.id=$1`,
+  [asnA],
+)
+check(
+  done.asn_status === 'LOADED' && done.loading_status === 'COMPLETED',
+  'ASN 상차완료(LOADED), 상차 전표 완료',
+  '상차완료 상태',
+  JSON.stringify(done),
+)
+const scans = await one(
+  `select count(*)::int n, string_agg(method || ':' || trim_scale(qty), ',' order by created_at, id) m from loading_scans where loading_id=$1`,
+  [loadingId],
+)
+check(scans.n === 4, `스캔 이력 4건 (${scans.m})`, '스캔 이력', scans.m)
+await expectErr(
+  '상차완료 후 스캔 불가',
+  `select scan_loading($1, '880001', null, 1)`,
+  [loadingId],
+  '상차완료된 전표',
+)
+await expectErr('상차완료 ASN 취소 불가', `select cancel_asn($1)`, [asnA], '상차가 시작되기 전')
+await as(null)
+const tr2 = await one(
+  `select count(*)::int n from v_doc_trace where asn_id=$1 and loading_status='COMPLETED'`,
+  [asnA],
+)
+check(tr2.n === 2, '전표 추적: 입고예정 → ASN → 상차완료 연결', '추적', tr2.n)
+
 console.log('■ 이력 테이블 재구성 (기존 이력이 있는 상태)')
 await as(null)
 const histBefore = await one(`select count(*)::int n, max(hist_id)::int m from items_hist`)

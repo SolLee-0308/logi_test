@@ -260,7 +260,8 @@ CHECK 규칙은 구분에 따라 다릅니다.
 | 테이블 | 주요 컬럼 |
 |---|---|
 | loadings | loading_no(UK), asn_id(UK), status, worker_id, started_at, completed_at |
-| loading_lines | loading_id, asn_line_id(UK in loading), item_id, scanned_barcode, loaded_qty |
+| loading_lines | loading_id, asn_line_id(UK in loading), item_id, scanned_barcode, loaded_qty(= 스캔 이력 합계, 자동) |
+| loading_scans | loading_id, asn_line_id, item_id, scanned_barcode, qty(정정은 ±차이), method(SCAN / MANUAL / ADJUST) — 스캔 1건 = 1행 |
 
 **receipts / receipt_lines / receipt_images** — 검수·입고
 | 테이블 | 주요 컬럼 |

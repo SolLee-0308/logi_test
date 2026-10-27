@@ -28,6 +28,54 @@ function page(path: string, load: () => Promise<ComponentType>): RouteObject {
 
 export const router = createBrowserRouter([
   { path: '/login', element: <LoginPage /> },
+  // 출력 전용 화면 (사이드바 없음)
+  {
+    path: '/print/asn/:id',
+    lazy: async () => {
+      const { AsnPrintPage } = await import('@/features/asn/asn-print-page')
+      return {
+        element: (
+          <RequireAuth>
+            <AsnPrintPage />
+          </RequireAuth>
+        ),
+      }
+    },
+  },
+  // PDA 전용 화면
+  {
+    path: '/pda',
+    lazy: async () => {
+      const { PdaLayout } = await import('@/features/pda/pda-layout')
+      return {
+        element: (
+          <RequireAuth>
+            <PdaLayout />
+          </RequireAuth>
+        ),
+      }
+    },
+    children: [
+      {
+        index: true,
+        lazy: async () => ({
+          Component: (await import('@/features/pda/pda-home-page')).PdaHomePage,
+        }),
+      },
+      {
+        path: 'loading',
+        lazy: async () => ({
+          Component: (await import('@/features/pda/pda-loading-start-page')).PdaLoadingStartPage,
+        }),
+      },
+      {
+        path: 'loading/:loadingId',
+        lazy: async () => ({
+          Component: (await import('@/features/pda/pda-loading-page')).PdaLoadingPage,
+        }),
+      },
+    ],
+  },
   {
     element: (
       <RequireAuth>
@@ -59,6 +107,16 @@ export const router = createBrowserRouter([
       ),
       page('inbound/plans/:id/edit', () =>
         import('@/features/inbound/plan-form-page').then((m) => m.PlanFormPage),
+      ),
+      page('inbound/asn', () => import('@/features/asn/asn-list-page').then((m) => m.AsnListPage)),
+      page('inbound/asn/new', () =>
+        import('@/features/asn/asn-form-page').then((m) => m.AsnFormPage),
+      ),
+      page('inbound/asn/:id', () =>
+        import('@/features/asn/asn-detail-page').then((m) => m.AsnDetailPage),
+      ),
+      page('inbound/asn/:id/edit', () =>
+        import('@/features/asn/asn-form-page').then((m) => m.AsnFormPage),
       ),
       page('admin/users', () => import('@/features/admin/users-page').then((m) => m.UsersPage)),
       { path: '*', element: <PlaceholderPage /> },

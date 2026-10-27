@@ -13,6 +13,7 @@ import {
 import { useAuth } from '@/lib/auth-context'
 import { formatDateTime, formatQty, todayKst } from '@/lib/date'
 import { usePlans } from '@/features/inbound/api'
+import { useUnassignedPlanLines } from '@/features/asn/api'
 import { useItems, useShippers } from '@/features/master/api'
 import { KpiCard } from '@/features/dashboard/kpi-card'
 import { StatusBadge } from '@/components/common/status-badge'
@@ -30,6 +31,16 @@ export function ShipperDashboard() {
   const tomorrow = todayKst(1)
   const { data: plans, isLoading } = usePlans(todayKst(-30), todayKst(30))
   const { data: items } = useItems()
+  const { data: unassigned } = useUnassignedPlanLines(today)
+  // 일자별 차량 미배정 품목 수·잔량
+  const unassignedByDate = useMemo(() => {
+    const map = new Map<string, { lines: number; qty: number }>()
+    for (const u of unassigned ?? []) {
+      const prev = map.get(u.plan_date) ?? { lines: 0, qty: 0 }
+      map.set(u.plan_date, { lines: prev.lines + 1, qty: prev.qty + Number(u.remaining_qty) })
+    }
+    return [...map.entries()].sort(([a], [b]) => a.localeCompare(b))
+  }, [unassigned])
 
   const shipperName = shippers?.find((s) => s.id === profile?.shipper_id)?.shipper_name
 
@@ -46,7 +57,10 @@ export function ShipperDashboard() {
     }
   }, [plans, items, today, tomorrow])
 
-  const actionCount = (summary?.rejectedPlans.length ?? 0) + (summary?.rejectedItems.length ?? 0)
+  const actionCount =
+    (summary?.rejectedPlans.length ?? 0) +
+    (summary?.rejectedItems.length ?? 0) +
+    unassignedByDate.length
 
   return (
     <div className="space-y-6">
@@ -122,7 +136,9 @@ export function ShipperDashboard() {
                 </span>
               )}
             </CardTitle>
-            <CardDescription>3PL이 반려한 입고예정과 품목입니다.</CardDescription>
+            <CardDescription>
+              차량(ASN) 미배정 승인분, 3PL이 반려한 입고예정과 품목입니다.
+            </CardDescription>
           </CardHeader>
           <CardContent>
             {!summary ? (
@@ -133,6 +149,19 @@ export function ShipperDashboard() {
               </div>
             ) : (
               <ul className="divide-y rounded-lg border">
+                {unassignedByDate.map(([date, u]) => (
+                  <li
+                    key={date}
+                    className="hover:bg-muted/40 flex cursor-pointer items-center gap-2 px-3 py-2 text-sm"
+                    onClick={() => navigate(`/inbound/asn/new?date=${date}`)}
+                  >
+                    <Truck className="size-4 text-blue-600" />
+                    <span>
+                      {date} 승인분 중 <b>{u.lines}품목</b>(잔량 {formatQty(u.qty)}) 차량 미배정
+                    </span>
+                    <span className="text-primary ml-auto shrink-0 text-xs">ASN 등록 →</span>
+                  </li>
+                ))}
                 {summary.rejectedPlans.map((p) => (
                   <li
                     key={p.id}
