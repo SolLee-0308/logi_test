@@ -4,7 +4,7 @@ import { zodResolver } from '@hookform/resolvers/zod'
 import { Plus } from 'lucide-react'
 import { z } from 'zod'
 
-import { useAuth } from '@/lib/auth-context'
+import { isShipperUser, useAuth } from '@/lib/auth-context'
 import type { Vehicle } from '@/lib/types'
 import {
   emptyToNull,
@@ -49,6 +49,10 @@ const EMPTY: Partial<FormValues> = { vehicle_no: '', is_active: true }
 export function VehiclesPage() {
   const { profile } = useAuth()
   const isAdmin = profile?.role === 'ADMIN'
+  const shipperUser = isShipperUser(profile)
+  const canCreate = isAdmin || shipperUser
+  const canEditRow = (row: Vehicle | null) =>
+    isAdmin || (shipperUser && (!row || row.shipper_id === profile?.shipper_id))
   const { data: vehicles, isLoading } = useVehicles()
   const { data: shippers } = useShippers()
   const typeMap = useCodeMap('VEHICLE_TYPE')
@@ -62,6 +66,15 @@ export function VehiclesPage() {
   })
 
   const shipperMap = useMemo(() => new Map((shippers ?? []).map((s) => [s.id, s])), [shippers])
+  // 같은 차량번호를 등록한 화주 목록 (관리자 화면에서만 의미 있음: 화주는 자기 차량만 조회됨)
+  const usersByVehicle = useMemo(() => {
+    const map = new Map<string, string[]>()
+    for (const v of vehicles ?? []) {
+      const name = shipperMap.get(v.shipper_id)?.shipper_name ?? ''
+      map.set(v.vehicle_no, [...(map.get(v.vehicle_no) ?? []), name])
+    }
+    return map
+  }, [vehicles, shipperMap])
   const rows = useMemo(
     () => (shipperId === 'all' ? vehicles : vehicles?.filter((v) => v.shipper_id === shipperId)),
     [vehicles, shipperId],
@@ -92,18 +105,45 @@ export function VehiclesPage() {
       },
       { accessorKey: 'driver_name', header: '기사명' },
       { accessorKey: 'driver_tel', header: '기사 연락처' },
+      ...(isShipperUser(profile)
+        ? []
+        : [
+            {
+              id: 'shared',
+              header: '같은 차량 사용 화주',
+              accessorFn: (r: Vehicle) => (usersByVehicle.get(r.vehicle_no) ?? []).join(', '),
+              cell: ({ row }: { row: { original: Vehicle } }) => {
+                const names = usersByVehicle.get(row.original.vehicle_no) ?? []
+                return names.length > 1 ? (
+                  <span className="text-sm">
+                    <span className="mr-1 rounded bg-blue-500/10 px-1.5 text-xs text-blue-700 dark:text-blue-400">
+                      {names.length}곳
+                    </span>
+                    {names.join(', ')}
+                  </span>
+                ) : (
+                  <span className="text-muted-foreground">-</span>
+                )
+              },
+            } as DataColumn<Vehicle>,
+          ]),
       {
         accessorKey: 'is_active',
         header: '사용',
         cell: ({ getValue }) => <ActiveBadge active={getValue()} />,
       },
     ],
-    [shipperMap, typeMap],
+    [shipperMap, typeMap, profile, usersByVehicle],
   )
 
   const openForm = (row: Vehicle | null) => {
     setEditing(row)
-    form.reset(row ?? { ...EMPTY, shipper_id: shipperId === 'all' ? undefined : shipperId })
+    const defaultShipper = shipperUser
+      ? (profile?.shipper_id ?? undefined)
+      : shipperId === 'all'
+        ? undefined
+        : shipperId
+    form.reset(row ?? { ...EMPTY, shipper_id: defaultShipper })
     setOpen(true)
   }
 
@@ -123,9 +163,9 @@ export function VehiclesPage() {
     <div className="space-y-6">
       <PageHeader
         title="차량"
-        description="화주사별 입고 차량입니다. ASN(차량별 상차지시) 등록 시 선택합니다."
+        description="화주사별 입고 차량입니다. ASN(차량별 상차지시) 등록 시 선택합니다. 여러 화주사가 같은 차량을 각각 등록할 수 있습니다."
         actions={
-          isAdmin && (
+          canCreate && (
             <Button onClick={() => openForm(null)}>
               <Plus /> 차량 등록
             </Button>
@@ -138,7 +178,7 @@ export function VehiclesPage() {
         isLoading={isLoading}
         searchPlaceholder="차량번호, 기사명 검색"
         onRowClick={openForm}
-        toolbar={<ShipperFilter value={shipperId} onChange={setShipperId} />}
+        toolbar={!shipperUser && <ShipperFilter value={shipperId} onChange={setShipperId} />}
       />
       <FormSheet
         open={open}
@@ -146,7 +186,7 @@ export function VehiclesPage() {
         title={editing ? '차량 수정' : '차량 등록'}
         onSubmit={onSubmit}
         isSubmitting={save.isPending}
-        readOnly={!isAdmin}
+        readOnly={!canEditRow(editing)}
       >
         <ShipperSelectField
           control={form.control}
@@ -154,6 +194,7 @@ export function VehiclesPage() {
           label="화주사"
           required
           activeOnly
+          disabled={shipperUser}
         />
         <TextField
           control={form.control}

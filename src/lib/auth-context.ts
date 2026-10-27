@@ -23,3 +23,14 @@ export function hasRole(profile: Profile | null, roles?: Role[]) {
   if (!roles) return true
   return Boolean(profile && roles.includes(profile.role))
 }
+
+export function isShipperUser(profile: Profile | null) {
+  return profile?.user_type === 'SHIPPER'
+}
+
+// 3PL 승인 권한 (DB can_approve 와 동일)
+export function canApprove(profile: Profile | null) {
+  return (
+    profile?.user_type === 'INTERNAL' && (profile.role === 'ADMIN' || profile.role === 'OPERATOR')
+  )
+}

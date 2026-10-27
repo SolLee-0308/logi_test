@@ -98,7 +98,8 @@ stateDiagram-v2
 | No | 규칙 | 시점 | 구현 위치 |
 |---|---|---|---|
 | R1 | 입고예정 수정·취소는 PENDING 상태에서만 가능 | IP 수정 | 상태 가드 트리거 + RLS |
-| R2 | 입고예정 품목은 같은 화주의 사용 중인 품목이어야 함 | IP 라인 저장 | 트리거 `fn_check_item_shipper` |
+| R2 | 입고예정 품목은 같은 화주의 사용 중이며 **3PL 승인된** 품목이어야 함. 한 전표에 같은 품목은 1줄 | IP 라인 저장 | 트리거 `fn_guard_plan_line` + UK(plan_id, item_id) |
+| R2-1 | 승인수량은 0 ~ 예정수량, 감량 시 조정 사유 필수, 전부 0이면 반려 | IP 승인 | RPC `approve_inbound_plan` + CHECK |
 | R3 | ASN에는 APPROVED 입고예정 라인만 배정 가능 | AS 라인 저장 | 트리거 |
 | R4 | 입고예정 라인별 ASN 배정 수량 합계 ≤ 승인 수량 | AS 라인 저장 | 트리거(집계) + CHECK `asn_qty <= approved_qty` |
 | R5 | ASN의 화주, 차량의 화주, 입고예정의 화주가 모두 같아야 함 | AS 저장 | 트리거 |
@@ -111,7 +112,7 @@ stateDiagram-v2
 | R12 | 상태 컬럼은 RPC를 통해서만 변경 가능 | 모든 전표 | 상태 가드 트리거 `fn_guard_status` |
 | R13 | 앞 전표가 진행된 뒤에는 앞 전표를 삭제할 수 없음 | 모든 전표 | FK `on delete restrict` |
 
-- R1~R5, R9, R12, R13은 이번 단계(2단계) 스키마에 포함합니다.
+- R1~R5, R9, R12, R13은 2단계 스키마에, R2-1과 입고예정 RPC(`save_inbound_plan`, `approve_inbound_plan`, `reject_inbound_plan`, `cancel_inbound_plan`)는 3단계에 포함했습니다.
 - R6~R8, R10, R11은 상태를 바꾸는 RPC와 함께 해당 업무 화면 단계(3~5단계)에서 구현합니다.
 
 ## 5. 전표 추적

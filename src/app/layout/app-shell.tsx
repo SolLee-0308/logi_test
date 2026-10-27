@@ -1,6 +1,6 @@
 import { Outlet, useLocation } from 'react-router'
 
-import { allNavItems, navGroups } from '@/app/navigation'
+import { findNavItem, navGroups } from '@/app/navigation'
 import { AppSidebar } from '@/app/layout/app-sidebar'
 import { CommandMenu } from '@/app/layout/command-menu'
 import { ThemeToggle } from '@/app/layout/theme-toggle'
@@ -16,7 +16,7 @@ import { SidebarInset, SidebarProvider, SidebarTrigger } from '@/components/ui/s
 
 export function AppShell() {
   const { pathname } = useLocation()
-  const current = allNavItems.find((i) => i.url === pathname)
+  const current = findNavItem(pathname)
   const group = current && navGroups.find((g) => g.items.includes(current))
 
   return (

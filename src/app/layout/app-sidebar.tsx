@@ -1,6 +1,7 @@
 import { NavLink, useLocation } from 'react-router'
 import { ChevronsUpDown, LogOut, Warehouse } from 'lucide-react'
 
+import { findNavItem } from '@/app/navigation'
 import { useVisibleNavGroups } from '@/app/use-visible-nav'
 import { useAuth } from '@/lib/auth-context'
 import { ROLE_LABEL } from '@/lib/types'
@@ -64,7 +65,7 @@ export function AppSidebar() {
                     <SidebarMenuButton
                       asChild
                       tooltip={item.title}
-                      isActive={pathname === item.url}
+                      isActive={findNavItem(pathname)?.url === item.url}
                     >
                       <NavLink to={item.url} end>
                         <item.icon />

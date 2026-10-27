@@ -50,6 +50,16 @@ export const router = createBrowserRouter([
         import('@/features/master/vehicles-page').then((m) => m.VehiclesPage),
       ),
       page('master/codes', () => import('@/features/master/codes-page').then((m) => m.CodesPage)),
+      page('inbound/plans', () => import('@/features/inbound/plans-page').then((m) => m.PlansPage)),
+      page('inbound/plans/new', () =>
+        import('@/features/inbound/plan-form-page').then((m) => m.PlanFormPage),
+      ),
+      page('inbound/plans/:id', () =>
+        import('@/features/inbound/plan-detail-page').then((m) => m.PlanDetailPage),
+      ),
+      page('inbound/plans/:id/edit', () =>
+        import('@/features/inbound/plan-form-page').then((m) => m.PlanFormPage),
+      ),
       page('admin/users', () => import('@/features/admin/users-page').then((m) => m.UsersPage)),
       { path: '*', element: <PlaceholderPage /> },
     ],

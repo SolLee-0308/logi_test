@@ -223,9 +223,9 @@ check(
 const sa = await one(`select count(*)::int n from shippers`)
 check(sa.n === 1, '화주A 사용자는 자기 화주사만 조회', '화주사 조회', sa.n)
 await expectErr(
-  '화주 사용자는 품목 등록 불가',
+  '화주 사용자는 다른 화주 품목 등록 불가',
   `insert into items (shipper_id, shipper_item_code, item_name) values ($1,'Z','z')`,
-  [shipA],
+  [shipB],
   'row-level security',
 )
 const cmp = await one(`select count(*)::int n from company`)
@@ -259,7 +259,7 @@ await expectErr(
   '화주B 품목으로 라인 등록 불가 (R2)',
   `insert into inbound_plan_lines (plan_id, line_no, item_id, plan_qty) select $1, 9, id, 1 from items where shipper_id=$2 limit 1`,
   [planId, shipB],
-  '사용 중인 품목',
+  '승인된 품목',
 )
 await as(SA)
 const pl1 = await one(
@@ -432,6 +432,274 @@ console.log('■ 삭제 보호 (R13)')
 await expectErr('진행된 입고예정 라인 삭제 불가', `delete from inbound_plan_lines where id=$1`, [
   pl1.id,
 ])
+
+console.log('■ 3단계: 화주 품목 등록·승인')
+await as(SA)
+const pend = await one(
+  `insert into items (shipper_id, shipper_item_code, item_name, barcode) values ($1,'NEW-1','신규품목','990001') returning id, approval_status`,
+  [shipA],
+)
+check(
+  pend.approval_status === 'PENDING',
+  '화주 등록 품목은 승인대기',
+  '화주 품목 상태',
+  pend.approval_status,
+)
+await expectErr(
+  '화주가 승인 상태 직접 변경 불가',
+  `update items set approval_status='APPROVED' where id=$1`,
+  [pend.id],
+  '승인·반려 처리로만',
+)
+await expectErr(
+  '화주는 품목 승인 불가',
+  `select approve_items(array[$1]::uuid[])`,
+  [pend.id],
+  '권한이 없습니다',
+)
+const planX = await one(
+  `insert into inbound_plans (shipper_id, center_id, plan_date) values ($1,$2,current_date) returning id`,
+  [shipA, center],
+)
+await expectErr(
+  '미승인 품목은 입고예정에 사용 불가',
+  `insert into inbound_plan_lines (plan_id, line_no, item_id, plan_qty) values ($1,1,$2,5)`,
+  [planX.id, pend.id],
+  '승인된 품목',
+)
+await as(OPER)
+await expectErr('반려 사유 필수(품목)', `select reject_item($1, ' ')`, [pend.id], '반려 사유')
+const ap = await one(`select approve_items(array[$1]::uuid[]) n`, [pend.id])
+check(ap.n === 1, '운영자 품목 승인', '품목 승인', ap.n)
+await as(SA)
+await db.query(`update items set item_name='신규품목(변경)' where id=$1`, [pend.id])
+const re = await one(`select approval_status from items where id=$1`, [pend.id])
+check(
+  re.approval_status === 'PENDING',
+  '승인 후 화주 수정 → 재승인 대기',
+  '재승인',
+  re.approval_status,
+)
+await as(OPER)
+await expectOk('운영자 품목 반려', `select reject_item($1, '바코드 확인 필요')`, [pend.id])
+await as(ADMIN)
+const adm = await one(
+  `insert into items (shipper_id, shipper_item_code, item_name) values ($1,'ADM-1','관리자등록') returning approval_status`,
+  [shipA],
+)
+check(
+  adm.approval_status === 'APPROVED',
+  '관리자 등록 품목은 즉시 승인',
+  '관리자 등록',
+  adm.approval_status,
+)
+await as(null)
+const ih = await one(
+  `select count(*)::int n, string_agg(hist_op || ':' || approval_status, ',' order by hist_id) ops from items_hist where id=$1`,
+  [pend.id],
+)
+check(ih.n >= 4, `품목 승인 이력 보존 (${ih.ops})`, '품목 이력', ih.ops)
+const oldHist = await one(`select count(*)::int n from items_hist where id=$1 and hist_op='I'`, [
+  itemA1.rows[0].id,
+])
+check(oldHist.n === 1, '이력 테이블 재구성 후 기존 이력 유지', '기존 이력', oldHist.n)
+
+console.log('■ 3단계: 화주 차량 등록 (화주 간 중복 허용)')
+await as(SB)
+await expectOk(
+  '화주B가 화주A와 같은 차량번호 등록',
+  `insert into vehicles (shipper_id, vehicle_no) values ($1,'12가 3456')`,
+  [shipB],
+)
+await expectErr(
+  '같은 화주 안에서 차량번호 중복 불가',
+  `insert into vehicles (shipper_id, vehicle_no) values ($1,'12가3456')`,
+  [shipB],
+  'vehicles_shipper_vehicle_no_uk',
+)
+await expectErr(
+  '다른 화주 차량 등록 불가',
+  `insert into vehicles (shipper_id, vehicle_no) values ($1,'77다7777')`,
+  [shipA],
+  'row-level security',
+)
+const vb = await one(`select count(*)::int n from vehicles`)
+check(vb.n === 2, '화주B는 자기 차량만 조회 (화주A 차량 숨김)', '차량 조회', vb.n)
+await as(ADMIN)
+const shared = await one(
+  `select count(distinct shipper_id)::int n from vehicles where vehicle_no='12가3456'`,
+)
+check(shared.n === 2, '관리자는 같은 차량번호의 화주 2곳 확인', '공유 차량', shared.n)
+await as(null)
+
+console.log('■ 3단계: 입고예정 저장·승인 RPC')
+await as(SA)
+const items2 = (
+  await db.query(
+    `select id from items where shipper_id=$1 and approval_status='APPROVED' and is_active order by internal_code limit 2`,
+    [shipA],
+  )
+).rows
+const planId2 = (
+  await one(`select save_inbound_plan(null, $1, current_date, '1차', 'MANUAL', $2::jsonb) id`, [
+    shipA,
+    JSON.stringify([
+      { item_id: items2[0].id, plan_qty: 100 },
+      { item_id: items2[1].id, plan_qty: 20 },
+    ]),
+  ])
+).id
+ok('save_inbound_plan 등록')
+await expectErr(
+  '같은 품목 중복 라인 불가',
+  `select save_inbound_plan($1, $2, current_date, null, 'MANUAL', $3::jsonb)`,
+  [
+    planId2,
+    shipA,
+    JSON.stringify([
+      { item_id: items2[0].id, plan_qty: 1 },
+      { item_id: items2[0].id, plan_qty: 2 },
+    ]),
+  ],
+  'inbound_plan_lines_item_uk',
+)
+await expectErr(
+  '과거 일자 불가',
+  `select save_inbound_plan(null, $1, current_date - 1, null, 'MANUAL', $2::jsonb)`,
+  [shipA, JSON.stringify([{ item_id: items2[0].id, plan_qty: 1 }])],
+  '오늘 이후',
+)
+await expectOk(
+  '승인대기 중 수정(라인 교체)',
+  `select save_inbound_plan($1, $2, current_date, '1차 수정', 'MANUAL', $3::jsonb)`,
+  [
+    planId2,
+    shipA,
+    JSON.stringify([
+      { item_id: items2[0].id, plan_qty: 120 },
+      { item_id: items2[1].id, plan_qty: 20 },
+    ]),
+  ],
+)
+const lines2 = (
+  await db.query(
+    `select id, line_no, plan_qty from inbound_plan_lines where plan_id=$1 order by line_no`,
+    [planId2],
+  )
+).rows
+check(
+  lines2.length === 2 && lines2[0].plan_qty == 120,
+  '수정 후 라인 2건, 1번 120',
+  '수정 결과',
+  JSON.stringify(lines2),
+)
+await expectErr(
+  '화주는 입고 승인 불가',
+  `select approve_inbound_plan($1, '[]'::jsonb)`,
+  [planId2],
+  '권한이 없습니다',
+)
+await as(OPER)
+const L = (q1, r1, q2, r2) =>
+  JSON.stringify([
+    { line_id: lines2[0].id, approved_qty: q1, adjust_reason: r1 },
+    { line_id: lines2[1].id, approved_qty: q2, adjust_reason: r2 },
+  ])
+await expectErr(
+  '예정 초과 승인 불가',
+  `select approve_inbound_plan($1, $2::jsonb)`,
+  [planId2, L(121, null, 20, null)],
+  '0 ~',
+)
+await expectErr(
+  '감량 시 사유 필수',
+  `select approve_inbound_plan($1, $2::jsonb)`,
+  [planId2, L(100, null, 20, null)],
+  '조정 사유',
+)
+await expectErr(
+  '전부 0이면 반려 안내',
+  `select approve_inbound_plan($1, $2::jsonb)`,
+  [planId2, L(0, '공간부족', 0, '공간부족')],
+  '반려하세요',
+)
+await expectOk('라인 조정 후 최종 승인', `select approve_inbound_plan($1, $2::jsonb)`, [
+  planId2,
+  L(100, '적재공간 부족', 20, null),
+])
+const ap2 = await one(
+  `select status, approved_by, total_approved_qty, approved_by_name from v_inbound_plans where id=$1`,
+  [planId2],
+)
+check(
+  ap2.status === 'APPROVED' && ap2.approved_by === OPER && ap2.total_approved_qty == 120,
+  `승인 완료: 승인수량 합계 ${ap2.total_approved_qty}, 승인자 ${ap2.approved_by_name}`,
+  '승인 결과',
+  JSON.stringify(ap2),
+)
+await as(SA)
+await expectErr(
+  '승인 후 화주 취소 불가',
+  `select cancel_inbound_plan($1)`,
+  [planId2],
+  '승인대기 상태에서만',
+)
+const planId3 = (
+  await one(`select save_inbound_plan(null, $1, current_date + 1, null, 'EXCEL', $2::jsonb) id`, [
+    shipA,
+    JSON.stringify([{ item_id: items2[0].id, plan_qty: 5 }]),
+  ])
+).id
+await expectOk('승인대기 화주 취소', `select cancel_inbound_plan($1)`, [planId3])
+await as(SB)
+const vSB = await one(`select count(*)::int n from v_inbound_plans`)
+check(vSB.n === 0, '화주B는 화주A 입고예정 목록 조회 불가', '목록 RLS', vSB.n)
+await expectErr(
+  '화주B는 화주A 전표 취소 불가',
+  `select cancel_inbound_plan($1)`,
+  [planId2],
+  '찾을 수 없습니다',
+)
+await as(OPER)
+const planId4 = (
+  await one(
+    `select save_inbound_plan(null, $1, current_date, '3PL 대리 등록', 'MANUAL', $2::jsonb) id`,
+    [shipA, JSON.stringify([{ item_id: items2[0].id, plan_qty: 1 }])],
+  )
+).id
+await expectErr(
+  '반려 사유 필수(입고)',
+  `select reject_inbound_plan($1, '')`,
+  [planId4],
+  '반려 사유',
+)
+await expectOk('3PL 반려', `select reject_inbound_plan($1, '당일 입고 마감')`, [planId4])
+await as(null)
+
+console.log('■ 이력 테이블 재구성 (기존 이력이 있는 상태)')
+await as(null)
+const histBefore = await one(`select count(*)::int n, max(hist_id)::int m from items_hist`)
+await db.query(`alter table items add column tmp_flag text not null default 'x'`)
+await expectOk('필수 컬럼 추가 후 재구성', `select fn_rebuild_history('items')`)
+await db.query(`alter table items drop column tmp_flag`)
+await expectOk('컬럼 삭제 후 재구성', `select fn_rebuild_history('items')`)
+const histAfter = await one(`select count(*)::int n, max(hist_id)::int m from items_hist`)
+check(
+  histAfter.n === histBefore.n && histAfter.m === histBefore.m,
+  `기존 이력 ${histAfter.n}건·hist_id 보존`,
+  '이력 보존',
+  JSON.stringify({ histBefore, histAfter }),
+)
+await db.query(`update items set remark='재구성 후 변경' where id=$1`, [itemA1.rows[0].id])
+const histNew = await one(
+  `select hist_id::int id, hist_op from items_hist order by hist_id desc limit 1`,
+)
+check(
+  histNew.id === histBefore.m + 1 && histNew.hist_op === 'U',
+  '재구성 후 새 이력 정상 적재',
+  '새 이력',
+  JSON.stringify(histNew),
+)
 
 console.log(`\n결과: PASS ${pass} / FAIL ${fail}`)
 process.exit(fail ? 1 : 0)

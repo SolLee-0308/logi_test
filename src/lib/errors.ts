@@ -9,6 +9,9 @@ const CONSTRAINT_MESSAGES: Record<string, string> = {
   items_shipper_item_code_uk: '같은 화주사에 이미 등록된 화주 품목코드입니다.',
   items_shipper_barcode_uk: '같은 화주사에 이미 등록된 바코드입니다.',
   vehicles_vehicle_no_key: '이미 등록된 차량번호입니다.',
+  vehicles_shipper_vehicle_no_uk: '이 화주사에 이미 등록된 차량번호입니다.',
+  inbound_plan_lines_item_uk: '같은 품목이 두 번 입력되었습니다. 한 줄로 합쳐 주세요.',
+  inbound_plan_lines_approved_le_plan_ck: '승인수량은 예정수량을 넘을 수 없습니다.',
   code_groups_pkey: '이미 존재하는 유형코드입니다.',
   code_groups_group_code_check:
     '유형코드는 영문 대문자로 시작하고 영문 대문자, 숫자, _ 만 사용할 수 있습니다.',

@@ -1,3 +1,4 @@
+import { useMemo } from 'react'
 import { useMutation, useQuery } from '@tanstack/react-query'
 import { toast } from 'sonner'
 
@@ -83,7 +84,7 @@ export const useCodes = (group?: string) =>
 // 코드 → 코드명 조회용 맵
 export function useCodeMap(group: string) {
   const { data } = useCodes(group)
-  return new Map((data ?? []).map((c) => [c.code, c.code_name]))
+  return useMemo(() => new Map((data ?? []).map((c) => [c.code, c.code_name])), [data])
 }
 
 type SaveArgs = {
@@ -141,4 +142,35 @@ export function useDeleteRow() {
 // 빈 문자열은 null 로 저장
 export function emptyToNull<T extends Record<string, unknown>>(values: T): T {
   return Object.fromEntries(Object.entries(values).map(([k, v]) => [k, v === '' ? null : v])) as T
+}
+
+export function useApproveItems() {
+  return useMutation({
+    mutationFn: async (ids: string[]) => {
+      const { data, error } = await supabase!.rpc('approve_items', { p_item_ids: ids })
+      if (error) throw error
+      return data as number
+    },
+    onSuccess: (count) => {
+      queryClient.invalidateQueries({ queryKey: masterKeys.items })
+      queryClient.invalidateQueries({ queryKey: ['pending-counts'] })
+      toast.success(`품목 ${count}건을 승인했습니다.`)
+    },
+    onError: (error) => toast.error(toErrorMessage(error)),
+  })
+}
+
+export function useRejectItem() {
+  return useMutation({
+    mutationFn: async ({ id, reason }: { id: string; reason: string }) => {
+      const { error } = await supabase!.rpc('reject_item', { p_item_id: id, p_reason: reason })
+      if (error) throw error
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: masterKeys.items })
+      queryClient.invalidateQueries({ queryKey: ['pending-counts'] })
+      toast.success('품목을 반려했습니다.')
+    },
+    onError: (error) => toast.error(toErrorMessage(error)),
+  })
 }

@@ -1,16 +1,10 @@
-export type Json =
-  | string
-  | number
-  | boolean
-  | null
-  | { [key: string]: Json | undefined }
-  | Json[]
+export type Json = string | number | boolean | null | { [key: string]: Json | undefined } | Json[]
 
 export type Database = {
   // Allows to automatically instantiate createClient with right options
   // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
   __InternalSupabase: {
-    PostgrestVersion: "14.18"
+    PostgrestVersion: '14.18'
   }
   graphql_public: {
     Tables: {
@@ -84,25 +78,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "ai_import_jobs_plan_fk"
-            columns: ["plan_id"]
+            foreignKeyName: 'ai_import_jobs_plan_fk'
+            columns: ['plan_id']
             isOneToOne: false
-            referencedRelation: "inbound_plans"
-            referencedColumns: ["id"]
+            referencedRelation: 'inbound_plans'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "ai_import_jobs_plan_fk"
-            columns: ["plan_id"]
+            foreignKeyName: 'ai_import_jobs_plan_fk'
+            columns: ['plan_id']
             isOneToOne: false
-            referencedRelation: "v_doc_trace"
-            referencedColumns: ["plan_id"]
+            referencedRelation: 'v_doc_trace'
+            referencedColumns: ['plan_id']
           },
           {
-            foreignKeyName: "ai_import_jobs_shipper_id_fkey"
-            columns: ["shipper_id"]
+            foreignKeyName: 'ai_import_jobs_plan_fk'
+            columns: ['plan_id']
             isOneToOne: false
-            referencedRelation: "shippers"
-            referencedColumns: ["id"]
+            referencedRelation: 'v_inbound_plans'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'ai_import_jobs_shipper_id_fkey'
+            columns: ['shipper_id']
+            isOneToOne: false
+            referencedRelation: 'shippers'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -214,32 +215,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "asn_lines_asn_id_fkey"
-            columns: ["asn_id"]
+            foreignKeyName: 'asn_lines_asn_id_fkey'
+            columns: ['asn_id']
             isOneToOne: false
-            referencedRelation: "asns"
-            referencedColumns: ["id"]
+            referencedRelation: 'asns'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "asn_lines_asn_id_fkey"
-            columns: ["asn_id"]
+            foreignKeyName: 'asn_lines_asn_id_fkey'
+            columns: ['asn_id']
             isOneToOne: false
-            referencedRelation: "v_doc_trace"
-            referencedColumns: ["asn_id"]
+            referencedRelation: 'v_doc_trace'
+            referencedColumns: ['asn_id']
           },
           {
-            foreignKeyName: "asn_lines_item_id_fkey"
-            columns: ["item_id"]
+            foreignKeyName: 'asn_lines_item_id_fkey'
+            columns: ['item_id']
             isOneToOne: false
-            referencedRelation: "items"
-            referencedColumns: ["id"]
+            referencedRelation: 'items'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "asn_lines_plan_line_id_fkey"
-            columns: ["plan_line_id"]
+            foreignKeyName: 'asn_lines_plan_line_id_fkey'
+            columns: ['plan_line_id']
             isOneToOne: false
-            referencedRelation: "inbound_plan_lines"
-            referencedColumns: ["id"]
+            referencedRelation: 'inbound_plan_lines'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -354,25 +355,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "asns_center_id_fkey"
-            columns: ["center_id"]
+            foreignKeyName: 'asns_center_id_fkey'
+            columns: ['center_id']
             isOneToOne: false
-            referencedRelation: "centers"
-            referencedColumns: ["id"]
+            referencedRelation: 'centers'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "asns_shipper_id_fkey"
-            columns: ["shipper_id"]
+            foreignKeyName: 'asns_shipper_id_fkey'
+            columns: ['shipper_id']
             isOneToOne: false
-            referencedRelation: "shippers"
-            referencedColumns: ["id"]
+            referencedRelation: 'shippers'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "asns_vehicle_id_fkey"
-            columns: ["vehicle_id"]
+            foreignKeyName: 'asns_vehicle_id_fkey'
+            columns: ['vehicle_id']
             isOneToOne: false
-            referencedRelation: "vehicles"
-            referencedColumns: ["id"]
+            referencedRelation: 'vehicles'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -667,11 +668,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "codes_group_code_fkey"
-            columns: ["group_code"]
+            foreignKeyName: 'codes_group_code_fkey'
+            columns: ['group_code']
             isOneToOne: false
-            referencedRelation: "code_groups"
-            referencedColumns: ["group_code"]
+            referencedRelation: 'code_groups'
+            referencedColumns: ['group_code']
           },
         ]
       }
@@ -848,6 +849,7 @@ export type Database = {
       }
       inbound_plan_lines: {
         Row: {
+          adjust_reason: string | null
           approved_qty: number | null
           asn_qty: number
           created_at: string
@@ -862,6 +864,7 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          adjust_reason?: string | null
           approved_qty?: number | null
           asn_qty?: number
           created_at?: string
@@ -876,6 +879,7 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          adjust_reason?: string | null
           approved_qty?: number | null
           asn_qty?: number
           created_at?: string
@@ -891,81 +895,91 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "inbound_plan_lines_item_id_fkey"
-            columns: ["item_id"]
+            foreignKeyName: 'inbound_plan_lines_item_id_fkey'
+            columns: ['item_id']
             isOneToOne: false
-            referencedRelation: "items"
-            referencedColumns: ["id"]
+            referencedRelation: 'items'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "inbound_plan_lines_plan_id_fkey"
-            columns: ["plan_id"]
+            foreignKeyName: 'inbound_plan_lines_plan_id_fkey'
+            columns: ['plan_id']
             isOneToOne: false
-            referencedRelation: "inbound_plans"
-            referencedColumns: ["id"]
+            referencedRelation: 'inbound_plans'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "inbound_plan_lines_plan_id_fkey"
-            columns: ["plan_id"]
+            foreignKeyName: 'inbound_plan_lines_plan_id_fkey'
+            columns: ['plan_id']
             isOneToOne: false
-            referencedRelation: "v_doc_trace"
-            referencedColumns: ["plan_id"]
+            referencedRelation: 'v_doc_trace'
+            referencedColumns: ['plan_id']
+          },
+          {
+            foreignKeyName: 'inbound_plan_lines_plan_id_fkey'
+            columns: ['plan_id']
+            isOneToOne: false
+            referencedRelation: 'v_inbound_plans'
+            referencedColumns: ['id']
           },
         ]
       }
       inbound_plan_lines_hist: {
         Row: {
+          adjust_reason: string | null
           approved_qty: number | null
-          asn_qty: number
-          created_at: string
+          asn_qty: number | null
+          created_at: string | null
           created_by: string | null
           hist_at: string
           hist_by: string | null
           hist_id: number
           hist_op: string
-          id: string
-          item_id: string
-          line_no: number
-          plan_id: string
-          plan_qty: number
+          id: string | null
+          item_id: string | null
+          line_no: number | null
+          plan_id: string | null
+          plan_qty: number | null
           remark: string | null
-          updated_at: string
+          updated_at: string | null
           updated_by: string | null
         }
         Insert: {
+          adjust_reason?: string | null
           approved_qty?: number | null
-          asn_qty: number
-          created_at: string
+          asn_qty?: number | null
+          created_at?: string | null
           created_by?: string | null
           hist_at?: string
           hist_by?: string | null
           hist_id?: never
           hist_op: string
-          id: string
-          item_id: string
-          line_no: number
-          plan_id: string
-          plan_qty: number
+          id?: string | null
+          item_id?: string | null
+          line_no?: number | null
+          plan_id?: string | null
+          plan_qty?: number | null
           remark?: string | null
-          updated_at: string
+          updated_at?: string | null
           updated_by?: string | null
         }
         Update: {
+          adjust_reason?: string | null
           approved_qty?: number | null
-          asn_qty?: number
-          created_at?: string
+          asn_qty?: number | null
+          created_at?: string | null
           created_by?: string | null
           hist_at?: string
           hist_by?: string | null
           hist_id?: never
           hist_op?: string
-          id?: string
-          item_id?: string
-          line_no?: number
-          plan_id?: string
-          plan_qty?: number
+          id?: string | null
+          item_id?: string | null
+          line_no?: number | null
+          plan_id?: string | null
+          plan_qty?: number | null
           remark?: string | null
-          updated_at?: string
+          updated_at?: string | null
           updated_by?: string | null
         }
         Relationships: []
@@ -1027,25 +1041,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "inbound_plans_ai_job_id_fkey"
-            columns: ["ai_job_id"]
+            foreignKeyName: 'inbound_plans_ai_job_id_fkey'
+            columns: ['ai_job_id']
             isOneToOne: false
-            referencedRelation: "ai_import_jobs"
-            referencedColumns: ["id"]
+            referencedRelation: 'ai_import_jobs'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "inbound_plans_center_id_fkey"
-            columns: ["center_id"]
+            foreignKeyName: 'inbound_plans_center_id_fkey'
+            columns: ['center_id']
             isOneToOne: false
-            referencedRelation: "centers"
-            referencedColumns: ["id"]
+            referencedRelation: 'centers'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "inbound_plans_shipper_id_fkey"
-            columns: ["shipper_id"]
+            foreignKeyName: 'inbound_plans_shipper_id_fkey'
+            columns: ['shipper_id']
             isOneToOne: false
-            referencedRelation: "shippers"
-            referencedColumns: ["id"]
+            referencedRelation: 'shippers'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1120,6 +1134,9 @@ export type Database = {
       }
       items: {
         Row: {
+          approval_status: string
+          approved_at: string | null
+          approved_by: string | null
           barcode: string | null
           box_qty: number | null
           created_at: string
@@ -1130,6 +1147,7 @@ export type Database = {
           is_active: boolean
           item_name: string
           lot_yn: boolean
+          reject_reason: string | null
           remark: string | null
           shipper_id: string
           shipper_item_code: string
@@ -1139,6 +1157,9 @@ export type Database = {
           updated_by: string | null
         }
         Insert: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           barcode?: string | null
           box_qty?: number | null
           created_at?: string
@@ -1149,6 +1170,7 @@ export type Database = {
           is_active?: boolean
           item_name: string
           lot_yn?: boolean
+          reject_reason?: string | null
           remark?: string | null
           shipper_id: string
           shipper_item_code: string
@@ -1158,6 +1180,9 @@ export type Database = {
           updated_by?: string | null
         }
         Update: {
+          approval_status?: string
+          approved_at?: string | null
+          approved_by?: string | null
           barcode?: string | null
           box_qty?: number | null
           created_at?: string
@@ -1168,6 +1193,7 @@ export type Database = {
           is_active?: boolean
           item_name?: string
           lot_yn?: boolean
+          reject_reason?: string | null
           remark?: string | null
           shipper_id?: string
           shipper_item_code?: string
@@ -1178,82 +1204,94 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "items_shipper_id_fkey"
-            columns: ["shipper_id"]
+            foreignKeyName: 'items_shipper_id_fkey'
+            columns: ['shipper_id']
             isOneToOne: false
-            referencedRelation: "shippers"
-            referencedColumns: ["id"]
+            referencedRelation: 'shippers'
+            referencedColumns: ['id']
           },
         ]
       }
       items_hist: {
         Row: {
+          approval_status: string | null
+          approved_at: string | null
+          approved_by: string | null
           barcode: string | null
           box_qty: number | null
-          created_at: string
+          created_at: string | null
           created_by: string | null
-          expiry_yn: boolean
+          expiry_yn: boolean | null
           hist_at: string
           hist_by: string | null
           hist_id: number
           hist_op: string
-          id: string
-          internal_code: string
-          is_active: boolean
-          item_name: string
-          lot_yn: boolean
+          id: string | null
+          internal_code: string | null
+          is_active: boolean | null
+          item_name: string | null
+          lot_yn: boolean | null
+          reject_reason: string | null
           remark: string | null
-          shipper_id: string
-          shipper_item_code: string
+          shipper_id: string | null
+          shipper_item_code: string | null
           spec: string | null
-          uom_code: string
-          updated_at: string
+          uom_code: string | null
+          updated_at: string | null
           updated_by: string | null
         }
         Insert: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           barcode?: string | null
           box_qty?: number | null
-          created_at: string
+          created_at?: string | null
           created_by?: string | null
-          expiry_yn: boolean
+          expiry_yn?: boolean | null
           hist_at?: string
           hist_by?: string | null
           hist_id?: never
           hist_op: string
-          id: string
-          internal_code: string
-          is_active: boolean
-          item_name: string
-          lot_yn: boolean
+          id?: string | null
+          internal_code?: string | null
+          is_active?: boolean | null
+          item_name?: string | null
+          lot_yn?: boolean | null
+          reject_reason?: string | null
           remark?: string | null
-          shipper_id: string
-          shipper_item_code: string
+          shipper_id?: string | null
+          shipper_item_code?: string | null
           spec?: string | null
-          uom_code: string
-          updated_at: string
+          uom_code?: string | null
+          updated_at?: string | null
           updated_by?: string | null
         }
         Update: {
+          approval_status?: string | null
+          approved_at?: string | null
+          approved_by?: string | null
           barcode?: string | null
           box_qty?: number | null
-          created_at?: string
+          created_at?: string | null
           created_by?: string | null
-          expiry_yn?: boolean
+          expiry_yn?: boolean | null
           hist_at?: string
           hist_by?: string | null
           hist_id?: never
           hist_op?: string
-          id?: string
-          internal_code?: string
-          is_active?: boolean
-          item_name?: string
-          lot_yn?: boolean
+          id?: string | null
+          internal_code?: string | null
+          is_active?: boolean | null
+          item_name?: string | null
+          lot_yn?: boolean | null
+          reject_reason?: string | null
           remark?: string | null
-          shipper_id?: string
-          shipper_item_code?: string
+          shipper_id?: string | null
+          shipper_item_code?: string | null
           spec?: string | null
-          uom_code?: string
-          updated_at?: string
+          uom_code?: string | null
+          updated_at?: string | null
           updated_by?: string | null
         }
         Relationships: []
@@ -1297,25 +1335,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "loading_lines_asn_line_id_fkey"
-            columns: ["asn_line_id"]
+            foreignKeyName: 'loading_lines_asn_line_id_fkey'
+            columns: ['asn_line_id']
             isOneToOne: false
-            referencedRelation: "asn_lines"
-            referencedColumns: ["id"]
+            referencedRelation: 'asn_lines'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "loading_lines_item_id_fkey"
-            columns: ["item_id"]
+            foreignKeyName: 'loading_lines_item_id_fkey'
+            columns: ['item_id']
             isOneToOne: false
-            referencedRelation: "items"
-            referencedColumns: ["id"]
+            referencedRelation: 'items'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "loading_lines_loading_id_fkey"
-            columns: ["loading_id"]
+            foreignKeyName: 'loading_lines_loading_id_fkey'
+            columns: ['loading_id']
             isOneToOne: false
-            referencedRelation: "loadings"
-            referencedColumns: ["id"]
+            referencedRelation: 'loadings'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1412,18 +1450,18 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "loadings_asn_id_fkey"
-            columns: ["asn_id"]
+            foreignKeyName: 'loadings_asn_id_fkey'
+            columns: ['asn_id']
             isOneToOne: true
-            referencedRelation: "asns"
-            referencedColumns: ["id"]
+            referencedRelation: 'asns'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "loadings_asn_id_fkey"
-            columns: ["asn_id"]
+            foreignKeyName: 'loadings_asn_id_fkey'
+            columns: ['asn_id']
             isOneToOne: true
-            referencedRelation: "v_doc_trace"
-            referencedColumns: ["asn_id"]
+            referencedRelation: 'v_doc_trace'
+            referencedColumns: ['asn_id']
           },
         ]
       }
@@ -1526,11 +1564,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "profiles_shipper_id_fkey"
-            columns: ["shipper_id"]
+            foreignKeyName: 'profiles_shipper_id_fkey'
+            columns: ['shipper_id']
             isOneToOne: false
-            referencedRelation: "shippers"
-            referencedColumns: ["id"]
+            referencedRelation: 'shippers'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1624,11 +1662,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "receipt_images_receipt_line_id_fkey"
-            columns: ["receipt_line_id"]
+            foreignKeyName: 'receipt_images_receipt_line_id_fkey'
+            columns: ['receipt_line_id']
             isOneToOne: false
-            referencedRelation: "receipt_lines"
-            referencedColumns: ["id"]
+            referencedRelation: 'receipt_lines'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1734,25 +1772,25 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "receipt_lines_asn_line_id_fkey"
-            columns: ["asn_line_id"]
+            foreignKeyName: 'receipt_lines_asn_line_id_fkey'
+            columns: ['asn_line_id']
             isOneToOne: false
-            referencedRelation: "asn_lines"
-            referencedColumns: ["id"]
+            referencedRelation: 'asn_lines'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "receipt_lines_item_id_fkey"
-            columns: ["item_id"]
+            foreignKeyName: 'receipt_lines_item_id_fkey'
+            columns: ['item_id']
             isOneToOne: false
-            referencedRelation: "items"
-            referencedColumns: ["id"]
+            referencedRelation: 'items'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "receipt_lines_receipt_id_fkey"
-            columns: ["receipt_id"]
+            foreignKeyName: 'receipt_lines_receipt_id_fkey'
+            columns: ['receipt_id']
             isOneToOne: false
-            referencedRelation: "receipts"
-            referencedColumns: ["id"]
+            referencedRelation: 'receipts'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -1879,32 +1917,32 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "receipts_asn_id_fkey"
-            columns: ["asn_id"]
+            foreignKeyName: 'receipts_asn_id_fkey'
+            columns: ['asn_id']
             isOneToOne: true
-            referencedRelation: "asns"
-            referencedColumns: ["id"]
+            referencedRelation: 'asns'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "receipts_asn_id_fkey"
-            columns: ["asn_id"]
+            foreignKeyName: 'receipts_asn_id_fkey'
+            columns: ['asn_id']
             isOneToOne: true
-            referencedRelation: "v_doc_trace"
-            referencedColumns: ["asn_id"]
+            referencedRelation: 'v_doc_trace'
+            referencedColumns: ['asn_id']
           },
           {
-            foreignKeyName: "receipts_center_id_fkey"
-            columns: ["center_id"]
+            foreignKeyName: 'receipts_center_id_fkey'
+            columns: ['center_id']
             isOneToOne: false
-            referencedRelation: "centers"
-            referencedColumns: ["id"]
+            referencedRelation: 'centers'
+            referencedColumns: ['id']
           },
           {
-            foreignKeyName: "receipts_shipper_id_fkey"
-            columns: ["shipper_id"]
+            foreignKeyName: 'receipts_shipper_id_fkey'
+            columns: ['shipper_id']
             isOneToOne: false
-            referencedRelation: "shippers"
-            referencedColumns: ["id"]
+            referencedRelation: 'shippers'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2136,11 +2174,11 @@ export type Database = {
         }
         Relationships: [
           {
-            foreignKeyName: "vehicles_shipper_id_fkey"
-            columns: ["shipper_id"]
+            foreignKeyName: 'vehicles_shipper_id_fkey'
+            columns: ['shipper_id']
             isOneToOne: false
-            referencedRelation: "shippers"
-            referencedColumns: ["id"]
+            referencedRelation: 'shippers'
+            referencedColumns: ['id']
           },
         ]
       }
@@ -2238,12 +2276,69 @@ export type Database = {
         }
         Relationships: []
       }
+      v_inbound_plans: {
+        Row: {
+          ai_job_id: string | null
+          approved_at: string | null
+          approved_by: string | null
+          approved_by_name: string | null
+          center_id: string | null
+          created_at: string | null
+          created_by: string | null
+          created_by_name: string | null
+          id: string | null
+          line_count: number | null
+          plan_date: string | null
+          plan_no: string | null
+          reject_reason: string | null
+          remark: string | null
+          shipper_code: string | null
+          shipper_id: string | null
+          shipper_name: string | null
+          source_type: string | null
+          status: string | null
+          total_approved_qty: number | null
+          total_plan_qty: number | null
+          updated_at: string | null
+          updated_by: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: 'inbound_plans_ai_job_id_fkey'
+            columns: ['ai_job_id']
+            isOneToOne: false
+            referencedRelation: 'ai_import_jobs'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'inbound_plans_center_id_fkey'
+            columns: ['center_id']
+            isOneToOne: false
+            referencedRelation: 'centers'
+            referencedColumns: ['id']
+          },
+          {
+            foreignKeyName: 'inbound_plans_shipper_id_fkey'
+            columns: ['shipper_id']
+            isOneToOne: false
+            referencedRelation: 'shippers'
+            referencedColumns: ['id']
+          },
+        ]
+      }
     }
     Functions: {
+      approve_inbound_plan: {
+        Args: { p_lines: Json; p_plan_id: string }
+        Returns: undefined
+      }
+      approve_items: { Args: { p_item_ids: string[] }; Returns: number }
       auth_role: { Args: never; Returns: string }
       auth_shipper_id: { Args: never; Returns: string }
       auth_user_type: { Args: never; Returns: string }
       can_access_shipper: { Args: { p_shipper_id: string }; Returns: boolean }
+      can_approve: { Args: never; Returns: boolean }
+      cancel_inbound_plan: { Args: { p_plan_id: string }; Returns: undefined }
       fn_allow_status_change: { Args: never; Returns: undefined }
       fn_enable_audit: { Args: { p_table: string }; Returns: undefined }
       fn_enable_history: { Args: { p_table: string }; Returns: undefined }
@@ -2251,6 +2346,7 @@ export type Database = {
         Args: { p_date?: string; p_prefix: string }
         Returns: string
       }
+      fn_rebuild_history: { Args: { p_table: string }; Returns: undefined }
       fn_sync_plan_asn_qty: {
         Args: { p_plan_line_id: string }
         Returns: undefined
@@ -2258,6 +2354,25 @@ export type Database = {
       is_admin: { Args: never; Returns: boolean }
       is_internal: { Args: never; Returns: boolean }
       is_member: { Args: never; Returns: boolean }
+      reject_inbound_plan: {
+        Args: { p_plan_id: string; p_reason: string }
+        Returns: undefined
+      }
+      reject_item: {
+        Args: { p_item_id: string; p_reason: string }
+        Returns: undefined
+      }
+      save_inbound_plan: {
+        Args: {
+          p_lines: Json
+          p_plan_date: string
+          p_plan_id: string
+          p_remark: string
+          p_shipper_id: string
+          p_source_type: string
+        }
+        Returns: string
+      }
     }
     Enums: {
       [_ in never]: never
@@ -2268,33 +2383,31 @@ export type Database = {
   }
 }
 
-type DatabaseWithoutInternals = Omit<Database, "__InternalSupabase">
+type DatabaseWithoutInternals = Omit<Database, '__InternalSupabase'>
 
-type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, "public">]
+type DefaultSchema = DatabaseWithoutInternals[Extract<keyof Database, 'public'>]
 
 export type Tables<
   DefaultSchemaTableNameOrOptions extends
-    | keyof (DefaultSchema["Tables"] & DefaultSchema["Views"])
+    | keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
     | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])
+    ? keyof (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+        DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"] &
-      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Views"])[TableName] extends {
+  ? (DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'] &
+      DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Views'])[TableName] extends {
       Row: infer R
     }
     ? R
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])
-    ? (DefaultSchema["Tables"] &
-        DefaultSchema["Views"])[DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof (DefaultSchema['Tables'] & DefaultSchema['Views'])
+    ? (DefaultSchema['Tables'] & DefaultSchema['Views'])[DefaultSchemaTableNameOrOptions] extends {
         Row: infer R
       }
       ? R
@@ -2303,23 +2416,22 @@ export type Tables<
 
 export type TablesInsert<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Insert: infer I
     }
     ? I
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Insert: infer I
       }
       ? I
@@ -2328,23 +2440,22 @@ export type TablesInsert<
 
 export type TablesUpdate<
   DefaultSchemaTableNameOrOptions extends
-    | keyof DefaultSchema["Tables"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema['Tables'] | { schema: keyof DatabaseWithoutInternals },
   TableName extends (DefaultSchemaTableNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables']
     : never) = never,
 > = DefaultSchemaTableNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions["schema"]]["Tables"][TableName] extends {
+  ? DatabaseWithoutInternals[DefaultSchemaTableNameOrOptions['schema']]['Tables'][TableName] extends {
       Update: infer U
     }
     ? U
     : never
-  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema["Tables"]
-    ? DefaultSchema["Tables"][DefaultSchemaTableNameOrOptions] extends {
+  : DefaultSchemaTableNameOrOptions extends keyof DefaultSchema['Tables']
+    ? DefaultSchema['Tables'][DefaultSchemaTableNameOrOptions] extends {
         Update: infer U
       }
       ? U
@@ -2353,36 +2464,34 @@ export type TablesUpdate<
 
 export type Enums<
   DefaultSchemaEnumNameOrOptions extends
-    | keyof DefaultSchema["Enums"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema['Enums'] | { schema: keyof DatabaseWithoutInternals },
   EnumName extends (DefaultSchemaEnumNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"]
+    ? keyof DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums']
     : never) = never,
 > = DefaultSchemaEnumNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions["schema"]]["Enums"][EnumName]
-  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema["Enums"]
-    ? DefaultSchema["Enums"][DefaultSchemaEnumNameOrOptions]
+  ? DatabaseWithoutInternals[DefaultSchemaEnumNameOrOptions['schema']]['Enums'][EnumName]
+  : DefaultSchemaEnumNameOrOptions extends keyof DefaultSchema['Enums']
+    ? DefaultSchema['Enums'][DefaultSchemaEnumNameOrOptions]
     : never
 
 export type CompositeTypes<
   PublicCompositeTypeNameOrOptions extends
-    | keyof DefaultSchema["CompositeTypes"]
-    | { schema: keyof DatabaseWithoutInternals },
+    keyof DefaultSchema['CompositeTypes'] | { schema: keyof DatabaseWithoutInternals },
   CompositeTypeName extends (PublicCompositeTypeNameOrOptions extends {
     schema: keyof DatabaseWithoutInternals
   }
-    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"]
+    ? keyof DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes']
     : never) = never,
 > = PublicCompositeTypeNameOrOptions extends {
   schema: keyof DatabaseWithoutInternals
 }
-  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions["schema"]]["CompositeTypes"][CompositeTypeName]
-  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema["CompositeTypes"]
-    ? DefaultSchema["CompositeTypes"][PublicCompositeTypeNameOrOptions]
+  ? DatabaseWithoutInternals[PublicCompositeTypeNameOrOptions['schema']]['CompositeTypes'][CompositeTypeName]
+  : PublicCompositeTypeNameOrOptions extends keyof DefaultSchema['CompositeTypes']
+    ? DefaultSchema['CompositeTypes'][PublicCompositeTypeNameOrOptions]
     : never
 
 export const Constants = {

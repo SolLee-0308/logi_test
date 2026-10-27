@@ -40,7 +40,7 @@ export const navGroups: NavGroup[] = [
   {
     label: '입고',
     items: [
-      { title: '입고예정', url: '/inbound/plans', icon: ClipboardCheck },
+      { title: '입고예정', url: '/inbound/plans', icon: ClipboardCheck, ready: true },
       { title: 'ASN·상차지시', url: '/inbound/asn', icon: Truck },
       { title: '입고현황', url: '/inbound/status', icon: Boxes },
       { title: 'PDA 작업', url: '/pda', icon: ScanBarcode },
@@ -64,3 +64,10 @@ export const navGroups: NavGroup[] = [
 ]
 
 export const allNavItems = navGroups.flatMap((g) => g.items)
+
+// 현재 경로에 해당하는 메뉴 (하위 경로 포함, 가장 긴 경로 우선)
+export function findNavItem(pathname: string) {
+  return allNavItems
+    .filter((i) => pathname === i.url || (i.url !== '/' && pathname.startsWith(i.url + '/')))
+    .sort((a, b) => b.url.length - a.url.length)[0]
+}

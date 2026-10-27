@@ -205,6 +205,8 @@ erDiagram
 | uom_code | varchar(20) | 공통코드 UOM | 단위 |
 | box_qty | integer | > 0 | 입수량 |
 | lot_yn / expiry_yn | boolean | default false | 로트·유통기한 관리 여부 |
+| approval_status | varchar(10) | PENDING / APPROVED / REJECTED | 3PL 승인 상태. 화주 등록·수정 시 PENDING, 내부 사용자 등록 시 APPROVED |
+| approved_by / approved_at / reject_reason | | | 승인·반려 정보 (RPC `approve_items`, `reject_item`으로만 변경) |
 | remark, is_active | | | |
 
 **vehicles** — 차량
@@ -212,7 +214,7 @@ erDiagram
 |---|---|---|---|
 | id | uuid | PK | |
 | shipper_id | uuid | FK shippers | 소속 화주 |
-| vehicle_no | varchar(20) | UK | 차량번호 |
+| vehicle_no | varchar(20) | UK(shipper_id, vehicle_no) | 차량번호. **화주 간 중복 허용**(같은 차량을 여러 화주가 각각 등록). 검수 시 차량번호로 화주별 ASN을 묶어 조회 |
 | vehicle_type_code | varchar(20) | 공통코드 VEHICLE_TYPE | 차종 |
 | tonnage | numeric(5,1) | | 톤수 |
 | driver_name / driver_tel | varchar | | 기사 정보(선택) |
@@ -246,7 +248,7 @@ CHECK 규칙은 구분에 따라 다릅니다.
 | 테이블 | 주요 컬럼 |
 |---|---|
 | inbound_plans | plan_no(UK), shipper_id, center_id, plan_date, source_type(MANUAL/EXCEL/AI), ai_job_id, status, approved_by, approved_at, reject_reason, remark |
-| inbound_plan_lines | plan_id, line_no(UK in plan), item_id, plan_qty(>0), approved_qty, asn_qty(자동 집계, ≤ approved_qty), remark |
+| inbound_plan_lines | plan_id, line_no(UK in plan), item_id(UK in plan), plan_qty(>0), approved_qty(≤ plan_qty), adjust_reason(감량 사유), asn_qty(자동 집계, ≤ approved_qty), remark |
 
 **asns / asn_lines** — ASN·상차지시서
 | 테이블 | 주요 컬럼 |
@@ -285,4 +287,4 @@ CHECK 규칙은 구분에 따라 다릅니다.
 | 적재 | 공통 트리거 `fn_write_history()`가 AFTER INSERT/UPDATE/DELETE 때 변경 후(삭제는 변경 전) 행을 저장 |
 | 설정 | `select fn_enable_history('items');` 한 줄로 이력 테이블과 트리거를 생성 |
 | 권한 | 이력 테이블은 조회 전용이며, 내부 사용자만 조회 가능 |
-| 주의 | 원본 테이블에 컬럼을 추가하면 같은 마이그레이션에서 `_hist`에도 같은 컬럼을 추가해야 함(hist 컬럼 앞에 위치) |
+| 컬럼 변경 | 원본 테이블에 컬럼을 추가·삭제하면 같은 마이그레이션에서 `select fn_rebuild_history('테이블')`을 실행. 기존 이력을 보존한 채 이력 테이블을 새 구조로 재구성(새 컬럼은 과거 이력에서 null) |

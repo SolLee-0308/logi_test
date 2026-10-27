@@ -1,16 +1,18 @@
 import { useMemo, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
-import { Download, Plus, Upload } from 'lucide-react'
+import { CheckCircle2, Download, Plus, Upload, XCircle } from 'lucide-react'
 import { z } from 'zod'
 
-import { useAuth } from '@/lib/auth-context'
-import type { Item } from '@/lib/types'
+import { canApprove, isShipperUser, useAuth } from '@/lib/auth-context'
+import { APPROVAL_LABEL, type ApprovalStatus, type Item } from '@/lib/types'
 import {
   emptyToNull,
   masterKeys,
+  useApproveItems,
   useCodeMap,
   useItems,
+  useRejectItem,
   useSaveRow,
   useShippers,
 } from '@/features/master/api'
@@ -28,9 +30,12 @@ import {
   TextareaField,
 } from '@/components/common/form-fields'
 import { PageHeader } from '@/components/common/page-header'
+import { StatusBadge } from '@/components/common/status-badge'
 import { ShipperFilter } from '@/features/master/shipper-filter'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Textarea } from '@/components/ui/textarea'
 
 const schema = z.object({
   shipper_id: z.string({ error: '화주사를 선택하세요.' }).min(1, '화주사를 선택하세요.'),
@@ -59,7 +64,17 @@ const EMPTY: Partial<FormValues> = {
 export function ItemsPage() {
   const { profile } = useAuth()
   const isAdmin = profile?.role === 'ADMIN'
+  const shipperUser = isShipperUser(profile)
+  const approver = canApprove(profile)
+  // 등록: 관리자 또는 화주 사용자(자기 화주). 수정: 관리자 또는 자기 화주 품목
+  const canCreate = isAdmin || shipperUser
+  const canEditRow = (row: Item | null) =>
+    isAdmin || (shipperUser && (!row || row.shipper_id === profile?.shipper_id))
   const { data: items, isLoading } = useItems()
+  const approveItems = useApproveItems()
+  const rejectItem = useRejectItem()
+  const [approvalTab, setApprovalTab] = useState<'ALL' | ApprovalStatus>('ALL')
+  const [rejectReason, setRejectReason] = useState('')
   const { data: shippers } = useShippers()
   const uomMap = useCodeMap('UOM')
   const save = useSaveRow()
@@ -71,9 +86,15 @@ export function ItemsPage() {
 
   const shipperMap = useMemo(() => new Map((shippers ?? []).map((s) => [s.id, s])), [shippers])
   const rows = useMemo(
-    () => (shipperId === 'all' ? items : items?.filter((i) => i.shipper_id === shipperId)),
-    [items, shipperId],
+    () =>
+      items?.filter(
+        (i) =>
+          (shipperId === 'all' || i.shipper_id === shipperId) &&
+          (approvalTab === 'ALL' || i.approval_status === approvalTab),
+      ),
+    [items, shipperId, approvalTab],
   )
+  const pendingCount = items?.filter((i) => i.approval_status === 'PENDING').length ?? 0
 
   const columns = useMemo<DataColumn<Item>[]>(
     () => [
@@ -108,6 +129,12 @@ export function ItemsPage() {
         ),
       },
       {
+        id: 'approval',
+        header: '승인',
+        accessorFn: (r) => APPROVAL_LABEL[r.approval_status],
+        cell: ({ row }) => <StatusBadge status={row.original.approval_status} kind="approval" />,
+      },
+      {
         accessorKey: 'is_active',
         header: '사용',
         cell: ({ getValue }) => <ActiveBadge active={getValue()} />,
@@ -118,7 +145,13 @@ export function ItemsPage() {
 
   const openForm = (row: Item | null) => {
     setEditing(row)
-    form.reset(row ?? { ...EMPTY, shipper_id: shipperId === 'all' ? undefined : shipperId })
+    setRejectReason('')
+    const defaultShipper = shipperUser
+      ? (profile?.shipper_id ?? undefined)
+      : shipperId === 'all'
+        ? undefined
+        : shipperId
+    form.reset(row ?? { ...EMPTY, shipper_id: defaultShipper })
     setOpen(true)
   }
 
@@ -148,7 +181,7 @@ export function ItemsPage() {
             >
               <Download /> 목록 다운로드
             </Button>
-            {isAdmin && (
+            {canCreate && (
               <>
                 <Button variant="outline" onClick={() => setExcelOpen(true)}>
                   <Upload /> 엑셀 일괄등록
@@ -161,32 +194,116 @@ export function ItemsPage() {
           </>
         }
       />
+      <Tabs value={approvalTab} onValueChange={(v) => setApprovalTab(v as typeof approvalTab)}>
+        <TabsList>
+          <TabsTrigger value="ALL">전체</TabsTrigger>
+          <TabsTrigger value="PENDING">
+            승인대기
+            {pendingCount > 0 && (
+              <span className="ml-1 rounded-full bg-amber-500 px-1.5 text-[10px] text-white">
+                {pendingCount}
+              </span>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="APPROVED">승인</TabsTrigger>
+          <TabsTrigger value="REJECTED">반려</TabsTrigger>
+        </TabsList>
+      </Tabs>
       <DataTable
         columns={columns}
         data={rows}
         isLoading={isLoading}
         searchPlaceholder="코드, 품명, 바코드 검색"
         onRowClick={openForm}
-        toolbar={<ShipperFilter value={shipperId} onChange={setShipperId} />}
+        toolbar={
+          <>
+            {approver && approvalTab === 'PENDING' && (rows?.length ?? 0) > 0 && (
+              <Button
+                variant="outline"
+                disabled={approveItems.isPending}
+                onClick={() => approveItems.mutate((rows ?? []).map((r) => r.id))}
+              >
+                <CheckCircle2 /> 조회된 {rows?.length}건 일괄 승인
+              </Button>
+            )}
+            {!shipperUser && <ShipperFilter value={shipperId} onChange={setShipperId} />}
+          </>
+        }
       />
       <FormSheet
         open={open}
         onOpenChange={setOpen}
         title={editing ? '품목 수정' : '품목 등록'}
         description={
-          editing ? `내부코드 ${editing.internal_code}` : '내부코드는 저장 시 자동으로 부여됩니다.'
+          editing
+            ? `내부코드 ${editing.internal_code}`
+            : shipperUser
+              ? '저장하면 3PL 승인 후 입고예정에 사용할 수 있습니다. 내부코드는 자동으로 부여됩니다.'
+              : '내부코드는 저장 시 자동으로 부여됩니다.'
         }
         onSubmit={onSubmit}
         isSubmitting={save.isPending}
-        readOnly={!isAdmin}
+        readOnly={!canEditRow(editing)}
+        extraActions={
+          approver &&
+          editing?.approval_status === 'PENDING' && (
+            <div className="flex gap-2">
+              <Button
+                type="button"
+                variant="outline"
+                disabled={!rejectReason.trim() || rejectItem.isPending}
+                onClick={() =>
+                  rejectItem.mutate(
+                    { id: editing.id, reason: rejectReason },
+                    { onSuccess: () => setOpen(false) },
+                  )
+                }
+              >
+                <XCircle /> 반려
+              </Button>
+              <Button
+                type="button"
+                disabled={approveItems.isPending}
+                onClick={() =>
+                  approveItems.mutate([editing.id], { onSuccess: () => setOpen(false) })
+                }
+              >
+                <CheckCircle2 /> 승인
+              </Button>
+            </div>
+          )
+        }
       >
+        {editing && (
+          <div className="space-y-2 rounded-lg border p-3 text-sm">
+            <div className="flex items-center justify-between">
+              <span className="text-muted-foreground">승인 상태</span>
+              <StatusBadge status={editing.approval_status} kind="approval" />
+            </div>
+            {editing.approval_status === 'REJECTED' && editing.reject_reason && (
+              <p className="text-destructive">반려 사유: {editing.reject_reason}</p>
+            )}
+            {editing.approval_status === 'PENDING' && approver && (
+              <Textarea
+                placeholder="반려할 경우 사유를 입력하세요."
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+              />
+            )}
+            {shipperUser && editing.approval_status !== 'PENDING' && (
+              <p className="text-muted-foreground text-xs">
+                품목 정보를 수정하면 다시 3PL 승인을 받아야 입고예정에 사용할 수 있습니다.
+              </p>
+            )}
+          </div>
+        )}
         <ShipperSelectField
           control={form.control}
           name="shipper_id"
           label="화주사"
           required
           activeOnly
-          disabled={Boolean(editing)}
+          disabled={Boolean(editing) || shipperUser}
           description="등록 후 변경할 수 없습니다."
         />
         <TextField
